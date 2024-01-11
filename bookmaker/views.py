@@ -1,14 +1,11 @@
 from django.shortcuts import get_object_or_404, render
-from django.views.generic import ListView
 
-from bookmaker.models import Comment, Bet
+from bookmaker.models import Bet
 
 
-class IndexListView(ListView):
-    queryset = Bet.objects.order_by('resolve_date')
-    model = Bet
-    template_name = 'bookmaker/index.html'
-    context_object_name = "bets_list"
+def index(request):
+    bets = Bet.objects.all()
+    return render(request, "bookmaker/index.html", {"bets_list": bets})
 
 
 def comment_section(request, bet_id):
