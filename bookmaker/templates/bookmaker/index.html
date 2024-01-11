@@ -5,6 +5,14 @@
     <title>Bookmaker</title>
 </head>
 <body>
-
+    {% if bets_list %}
+        <ul>
+        {% for bet in bets_list %}
+            <li><a href="{% url 'bookmaker:comments' bet.id %}">{{ bet.bet_text }}, {{ bet.resolve_date }}, {{ bet.get_win_odds }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <h1>No bets in database</h1>
+    {% endif %}
 </body>
 </html>

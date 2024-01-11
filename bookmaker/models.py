@@ -11,7 +11,6 @@ class UserProfile(models.Model):
 
 
 class Bet(models.Model):
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     bet_text = models.CharField(max_length=200)
     resolve_date = models.DateTimeField("Date resolved")
     win_money_wagered = models.IntegerField(default=0)
@@ -45,6 +44,7 @@ class Comment(models.Model):
     comment_text = models.CharField(max_length=200)
     pub_date = models.DateTimeField("Date published")
     likes = models.IntegerField(default=0)
+    bet = models.ForeignKey(Bet, on_delete=models.CASCADE, null=True, blank=True, related_name="comments")
 
     def __str__(self):
         return self.comment_text
