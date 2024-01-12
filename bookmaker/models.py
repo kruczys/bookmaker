@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 class UserProfile(models.Model):
@@ -45,6 +46,9 @@ class Bet(models.Model):
         if not self.loose_money_wagered:
             return 1
         return round(self.get_total_money_wagered() / self.loose_money_wagered, 2)
+
+    def is_resolved(self):
+        return timezone.now() <= self.resolve_date
 
 
 class Comment(models.Model):

@@ -1,11 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Bookmaker</title>
-</head>
-<body>
-    <a href="{% url 'login' %}">Zaloguj</a>
+{% extends 'base.html' %}
+
+{% block title %}All bets{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <p>You've got {{ user_profile.wallet }} COINS</p>
+    {% endif %}
     {% if bets_list %}
         <ul>
         {% for bet in bets_list %}
@@ -24,5 +24,4 @@
     {% else %}
         <h1>No bets in database</h1>
     {% endif %}
-</body>
-</html>
+{% endblock %}

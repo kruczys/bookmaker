@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Bookmaker{% endblock %}</title>
+</head>
+<body>
+    <header>
+        Bookmaker - here you can loose your money!
+        {% if user.is_authenticated %}
+            <p>Hello {{ user.username }}!</p>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">Log out</button>
+            </form>
+        {% else %}
+            <p>Hello random stranger!</p>
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <button type="submit">Log in</button>
+            </form>
+            <p>Don't have account?</p>
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <button type="submit">temp login</button>
+            </form>
+        {% endif %}
+    </header>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+    <footer></footer>
+</body>
+</html>

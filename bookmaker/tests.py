@@ -42,6 +42,14 @@ class BetModelTestCase(TestCase):
         bet = Bet.objects.create(loose_money_wagered=0, resolve_date=timezone.now())
         self.assertEqual(bet.get_loose_odds(), 1)
 
+    def test_resolved_bet(self):
+        bet = Bet.objects.create(resolve_date=timezone.now() + timezone.timedelta(days=1))
+        self.assertEqual(bet.is_resolved(), True)
+
+    def test_unresolved_bet(self):
+        bet = Bet.objects.create(resolve_date=timezone.now() - timezone.timedelta(days=1))
+        self.assertEqual(bet.is_resolved(), False)
+
 
 class UserModelTestCase(TestCase):
     def test_reduce_too_much_money(self):
@@ -89,4 +97,11 @@ class IndexViewTestCase(TestCase):
 
 
 class CommentSectionViewTestCase(TestCase):
-    pass
+    def test_load_comments_section(self):
+        bet = Bet.objects.create(bet_text="bet", resolve_date=timezone.now())
+        response = self.client.get(reverse("bookmaker:comments", args=(bet.id,)))
+        self.assertEqual(response.status_code, 200)
+
+    def test_load_wrong_id(self):
+        response = self.client.get(reverse("bookmaker:comments", args=(1000,)))
+        self.assertEqual(response.status_code, 404)
