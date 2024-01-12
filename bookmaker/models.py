@@ -4,19 +4,25 @@ from django.db import models
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    nickname = models.CharField(max_length=255)
+    wallet = models.IntegerField(default=1000)
 
     def __str__(self):
-        return self.nickname
+        return self.user.username
+
+    def reduce_wallet(self, amount):
+        if self.wallet < amount:
+            raise ValueError("Insufficient funds.")
+        self.wallet -= amount
+        self.save()
 
 
 class Bet(models.Model):
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     bet_text = models.CharField(max_length=200)
     resolve_date = models.DateTimeField("Date resolved")
     win_money_wagered = models.IntegerField(default=0)
     draw_money_wagered = models.IntegerField(default=0)
     loose_money_wagered = models.IntegerField(default=0)
+    possible_to_draw = models.BooleanField(default=False)
 
     def __str__(self):
         return self.bet_text
@@ -27,17 +33,17 @@ class Bet(models.Model):
     def get_win_odds(self):
         if not self.win_money_wagered:
             return 0
-        return self.get_total_money_wagered() / self.win_money_wagered
+        return round(self.get_total_money_wagered() / self.win_money_wagered, 2)
 
     def get_draw_odds(self):
         if not self.draw_money_wagered:
             return 0
-        return self.get_total_money_wagered() / self.draw_money_wagered
+        return round(self.get_total_money_wagered() / self.draw_money_wagered, 2)
 
-    def get_lose_odds(self):
+    def get_loose_odds(self):
         if not self.loose_money_wagered:
             return 0
-        return self.get_total_money_wagered() / self.loose_money_wagered
+        return round(self.get_total_money_wagered() / self.loose_money_wagered, 2)
 
 
 class Comment(models.Model):
@@ -45,6 +51,7 @@ class Comment(models.Model):
     comment_text = models.CharField(max_length=200)
     pub_date = models.DateTimeField("Date published")
     likes = models.IntegerField(default=0)
+    bet = models.ForeignKey(Bet, on_delete=models.CASCADE, null=True, blank=True, related_name="comments")
 
     def __str__(self):
         return self.comment_text

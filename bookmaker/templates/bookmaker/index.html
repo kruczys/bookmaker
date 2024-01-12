@@ -5,6 +5,24 @@
     <title>Bookmaker</title>
 </head>
 <body>
-
+    <a href="{% url 'login' %}">Zaloguj</a>
+    {% if bets_list %}
+        <ul>
+        {% for bet in bets_list %}
+            <div class="bet">
+                <h2>{{ bet.bet_text }}</h2>
+                <h3>{{ bet.resolve_date }}</h3>
+                {% if bet.possible_to_draw %}
+                    <p>Tak - {{ bet.get_win_odds }}, Remis - {{ bet.get_draw_odds }}, Nie - {{ bet.get_loose_odds }}</p>
+                {% else %}
+                    <p>Tak - {{ bet.get_win_odds }}, Nie - {{ bet.get_loose_odds }}</p>
+                {% endif %}
+                <a href="{% url 'bookmaker:comments' bet.id %}">Zobacz komentarze</a>
+            </div>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <h1>No bets in database</h1>
+    {% endif %}
 </body>
 </html>
