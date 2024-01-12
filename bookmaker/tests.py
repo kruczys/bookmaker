@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.test.utils import setup_test_environment
+from django.urls import reverse
 
 from .models import UserProfile, Bet, Comment
 
@@ -49,5 +51,15 @@ class BetModelTestCase(TestCase):
         user_profile = UserProfile(user=user, wallet=wallet_amount)
         user_profile.reduce_wallet(reduce_amount)
         self.assertEqual(wallet_amount - reduce_amount, user_profile.wallet)
+
+    def test_no_bets_found(self):
+        response = self.client.get(reverse("bookmaker:index"))
+        self.assertContains(response, "No bets in database")
+        self.assertQuerysetEqual(response.context["bets_list"], [])
+
+    def test_load_main_page(self):
+        response = self.client.get(reverse("bookmaker:index"))
+        self.assertEqual(response.status_code, 200)
+
 
 
