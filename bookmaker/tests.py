@@ -54,23 +54,22 @@ class BetModelTestCase(TestCase):
 class UserModelTestCase(TestCase):
     def test_reduce_too_much_money(self):
         user = User.objects.create_user(username="test", password="<PASSWORD>")
-        user_profile = UserProfile.objects.create(user=user)
+        user_profile = UserProfile.objects.get(user=user)
         with self.assertRaises(ValueError):
             user_profile.reduce_wallet(1050)
 
     def test_reduce_wallet_correctly(self):
-        wallet_amount = 100
         reduce_amount = 50
         user = User.objects.create_user(username="test", password="<PASSWORD>")
-        user_profile = UserProfile.objects.create(user=user, wallet=wallet_amount)
+        user_profile = UserProfile.objects.get(user=user)
         user_profile.reduce_wallet(reduce_amount)
-        self.assertEqual(wallet_amount - reduce_amount, user_profile.wallet)
+        self.assertEqual(1000 - reduce_amount, user_profile.wallet)
 
 
 class CommentModelTestCase(TestCase):
     def test_increment_likes(self):
         user = User.objects.create_user(username="test", password="<PASSWORD>")
-        user_profile = UserProfile.objects.create(user=user)
+        user_profile = UserProfile.objects.get(user=user)
         comment = Comment.objects.create(pub_date=timezone.now(), user=user_profile)
         likes_before = comment.likes
         comment.increment_likes()
