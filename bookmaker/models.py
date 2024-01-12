@@ -13,6 +13,7 @@ class UserProfile(models.Model):
         if self.wallet < amount:
             raise ValueError("Insufficient funds.")
         self.wallet -= amount
+        self.user.save()
         self.save()
 
 
