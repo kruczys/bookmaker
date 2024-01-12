@@ -33,17 +33,17 @@ class Bet(models.Model):
 
     def get_win_odds(self):
         if not self.win_money_wagered:
-            return 0
+            return 1
         return round(self.get_total_money_wagered() / self.win_money_wagered, 2)
 
     def get_draw_odds(self):
         if not self.draw_money_wagered:
-            return 0
+            return 1
         return round(self.get_total_money_wagered() / self.draw_money_wagered, 2)
 
     def get_loose_odds(self):
         if not self.loose_money_wagered:
-            return 0
+            return 1
         return round(self.get_total_money_wagered() / self.loose_money_wagered, 2)
 
 
@@ -56,3 +56,8 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.comment_text
+
+    def increment_likes(self):
+        self.likes += 1
+        self.user.save()
+        self.save()
