@@ -4,10 +4,16 @@ from django.db import models
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    nickname = models.CharField(max_length=255)
+    wallet = models.IntegerField(default=1000)
 
     def __str__(self):
-        return self.nickname
+        return self.user.username
+
+    def reduce_wallet(self, amount):
+        if self.wallet < amount:
+            raise ValueError("Insufficient funds.")
+        self.wallet -= amount
+        self.save()
 
 
 class Bet(models.Model):
@@ -34,7 +40,7 @@ class Bet(models.Model):
             return 0
         return round(self.get_total_money_wagered() / self.draw_money_wagered, 2)
 
-    def get_loose_ods(self):
+    def get_loose_odds(self):
         if not self.loose_money_wagered:
             return 0
         return round(self.get_total_money_wagered() / self.loose_money_wagered, 2)
