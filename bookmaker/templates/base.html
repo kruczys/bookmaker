@@ -6,23 +6,24 @@
 </head>
 <body>
     <header>
-        <a href="{% url 'bookmaker:index' %}">Bookmaker</a> - here you can loose your money!
+        <a href="{% url 'bookmaker:index' %}">Bukmacher.pl</a> - Tu przegrasz wszystkie swoje pieniądze!
         {% if user.is_authenticated %}
-            <p>Hello {{ user.username }}!</p>
+            <p>Cześć użytkowniku {{ user.username }}!</p>
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
-                <button type="submit">Log out</button>
+                <button type="submit">Wyloguj</button>
             </form>
+            <button><a href="{% url 'bookmaker:create_bet' %}">Dodaj zakład</a></button>
         {% else %}
-            <p>Hello random stranger!</p>
+            <p>Cześć nieznany użytkowniku!</p>
             <form method="post" action="{% url 'login' %}">
                 {% csrf_token %}
-                <button type="submit">Log in</button>
+                <button type="submit">Zaloguj</button>
             </form>
-            <p>Don't have account?</p>
+            <p>Nie masz jeszcze konta?</p>
             <form method="post" action="{% url 'bookmaker:signup' %}">
                 {% csrf_token %}
-                <button type="submit">Sign up</button>
+                <button type="submit">Zarejestruj się!</button>
             </form>
         {% endif %}
     </header>

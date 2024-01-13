@@ -1,7 +1,14 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm
+
+from bookmaker.models import Bet
 
 
-class LoginForm(AuthenticationForm):
-    username = forms.CharField(max_length=30, label="login")
-    password = forms.CharField(widget=forms.PasswordInput, label="haslo")
+class CreateBetForm(forms.ModelForm):
+    class Meta:
+        model = Bet
+        fields = ['bet_text', 'resolve_date', 'possible_to_draw']
+        widgets = {
+            'bet_text': forms.Textarea(attrs={'class': 'form-control'}),
+            'resolve_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'possible_to_draw': forms.CheckboxInput(attrs={'class': 'form-control'}),
+        }

@@ -1,8 +1,9 @@
 from django.contrib.auth.forms import UserCreationForm
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse_lazy
 from django.views import generic
 
+from .forms import CreateBetForm
 from .models import Bet, UserProfile
 
 
@@ -24,3 +25,15 @@ class SignupView(generic.CreateView):
     form_class = UserCreationForm
     success_url = reverse_lazy('bookmaker:index')
     template_name = "registration/signup.html"
+
+
+def create_bet(request):
+    if request.method == 'POST':
+        form = CreateBetForm(request.POST)
+        if form.is_valid():
+            bet = form.save(commit=False)
+            bet.save()
+            return redirect('bookmaker:index')
+    else:
+        form = CreateBetForm()
+    return render(request, 'bookmaker/create_bet.html', {'form': form})
