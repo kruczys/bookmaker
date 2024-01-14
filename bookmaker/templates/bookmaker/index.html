@@ -8,20 +8,20 @@
         <p>Na koncie masz {{ user_profile.wallet }} EuroMonet</p>
     {% endif %}
     {% if bets_list %}
-        <ul>
         {% for bet in bets_list %}
-            <div class="bet">
-                <h2>{{ bet.bet_text }}</h2>
-                <h3>{{ bet.resolve_date }}</h3>
-                {% if bet.possible_to_draw %}
-                    <p>Tak - {{ bet.get_win_odds }}, REMIS - {{ bet.get_draw_odds }}, Nie - {{ bet.get_loose_odds }}</p>
-                {% else %}
-                    <p>Tak - {{ bet.get_win_odds }}, Nie - {{ bet.get_loose_odds }}</p>
-                {% endif %}
-                <a href="{% url 'bookmaker:comments' bet.id %}">Zobacz komentarze</a>
-            </div>
+            {% if not bet.is_resolved %}
+                <div class="bet">
+                    <h2>{{ bet.bet_text }}</h2>
+                    <h3>{{ bet.resolve_date }}</h3>
+                    {% if bet.possible_to_draw %}
+                        <p>Tak - {{ bet.get_win_odds }}, REMIS - {{ bet.get_draw_odds }}, Nie - {{ bet.get_loose_odds }}</p>
+                    {% else %}
+                        <p>Tak - {{ bet.get_win_odds }}, Nie - {{ bet.get_loose_odds }}</p>
+                    {% endif %}
+                    <a href="{% url 'bookmaker:comments' bet.id %}">Zobacz komentarze</a>
+                </div>
+            {% endif %}
         {% endfor %}
-        </ul>
     {% else %}
         <h1>No bets in database</h1>
     {% endif %}
