@@ -4,7 +4,7 @@ from django.urls import reverse_lazy
 from django.views import generic
 
 from .forms import CreateBetForm, UserBetForm
-from .models import Bet, UserProfile
+from .models import Bet, UserProfile, UserBet
 
 
 def index(request):
@@ -13,6 +13,15 @@ def index(request):
     if request.user.is_authenticated:
         user_profile = UserProfile.objects.get(user=request.user.id)
     return render(request, "bookmaker/index.html", {"bets_list": bets, "user_profile": user_profile})
+
+
+def user_info(request):
+    user_profile = UserProfile.objects.get(user=request.user)
+    user_bets = UserBet.objects.filter(user=user_profile)
+    return render(request, "bookmaker/info.html", {
+        "user_profile": user_profile,
+        "user_bets": user_bets,
+    })
 
 
 def comment_section(request, bet_id):

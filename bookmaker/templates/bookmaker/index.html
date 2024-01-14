@@ -9,7 +9,7 @@
     {% endif %}
     {% if bets_list %}
         {% for bet in bets_list %}
-            {% if not bet.is_resolved %}
+            {% if not bet.resolved %}
                 <div class="bet">
                     <h2>{{ bet.bet_text }}</h2>
                     <h3>{{ bet.resolve_date }}</h3>

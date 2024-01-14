@@ -51,10 +51,7 @@ class Bet(models.Model):
     bet_text = models.CharField(max_length=200)
     resolve_date = models.DateTimeField("Date resolved")
     result = models.IntegerField(default=0)
-
-    def save(self, *args, **kwargs):
-        self.result = randint(0, 2)
-        super(Bet, self).save(*args, **kwargs)
+    resolved = models.BooleanField(default=False)
 
     def __str__(self):
         return self.bet_text
@@ -85,6 +82,12 @@ class UserBet(models.Model):
         reward = self.wagered_amount * 1.67
         self.user.wallet = max(self.user.wallet + reward, 0)
         self.user.save()
+
+
+@receiver(post_save, sender=Bet)
+def resolve_bets(sender, instance, **kwargs):
+    for user_bet in instance.userbet_set.all():
+        user_bet.check_and_resolve()
 
 
 class Comment(models.Model):

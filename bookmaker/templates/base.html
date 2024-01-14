@@ -8,7 +8,7 @@
     <header>
         <a href="{% url 'bookmaker:index' %}">Bukmacher.pl</a> - Tu przegrasz wszystkie swoje pieniądze!
         {% if user.is_authenticated %}
-            <p>Cześć użytkowniku {{ user.username }}!</p>
+            <p>Cześć użytkowniku <a href="{% url 'bookmaker:user_info' %}">{{ user.username }}</a>!</p>
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button type="submit">Wyloguj</button>
