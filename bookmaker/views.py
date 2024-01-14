@@ -3,12 +3,12 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse_lazy
 from django.views import generic
 
-from .forms import CreateBetForm
+from .forms import CreateBetForm, UserBetForm
 from .models import Bet, UserProfile
 
 
 def index(request):
-    bets = Bet.objects.all().order_by('resolve_date')
+    bets = Bet.objects.all().order_by('-resolve_date')
     user_profile = None
     if request.user.is_authenticated:
         user_profile = UserProfile.objects.get(user=request.user.id)
@@ -37,3 +37,22 @@ def create_bet(request):
     else:
         form = CreateBetForm()
     return render(request, 'bookmaker/create_bet.html', {'form': form})
+
+
+def place_bet(request, bet_id):
+    bet = get_object_or_404(Bet, pk=bet_id)
+    user_profile = UserProfile.objects.get(user=request.user)
+
+    if request.method == 'POST':
+        form = UserBetForm(request.POST)
+        if form.is_valid():
+            user_bet = form.save(commit=False)
+            user_bet.user = user_profile
+            user_bet.bet = bet
+            user_bet.save()
+            user_profile.create_bet(bet, user_bet.wagered_amount, user_bet.wagered_option)
+            return redirect('bookmaker:place_bet', bet_id=bet.id)
+    else:
+        form = UserBetForm()
+
+    return render(request, "place_bet.html", {'form': form, 'bet': bet})

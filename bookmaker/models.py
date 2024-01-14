@@ -50,32 +50,14 @@ def save_user_profile(sender, instance, **kwargs):
 class Bet(models.Model):
     bet_text = models.CharField(max_length=200)
     resolve_date = models.DateTimeField("Date resolved")
-    win_money_wagered = models.IntegerField(default=0)
-    draw_money_wagered = models.IntegerField(default=0)
-    loose_money_wagered = models.IntegerField(default=0)
-    possible_to_draw = models.BooleanField(default=False)
-    result = randint(0, 2)
+    result = models.IntegerField(default=0)
+
+    def save(self, *args, **kwargs):
+        self.result = randint(0, 2)
+        super(Bet, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.bet_text
-
-    def get_total_money_wagered(self):
-        return self.win_money_wagered + self.draw_money_wagered + self.loose_money_wagered
-
-    def get_win_odds(self):
-        if not self.win_money_wagered:
-            return 1
-        return round(self.get_total_money_wagered() / self.win_money_wagered, 2)
-
-    def get_draw_odds(self):
-        if not self.draw_money_wagered:
-            return 1
-        return round(self.get_total_money_wagered() / self.draw_money_wagered, 2)
-
-    def get_loose_odds(self):
-        if not self.loose_money_wagered:
-            return 1
-        return round(self.get_total_money_wagered() / self.loose_money_wagered, 2)
 
     def is_resolved(self):
         return timezone.now() >= self.resolve_date
@@ -100,13 +82,7 @@ class UserBet(models.Model):
             self.calculate_reward()
 
     def calculate_reward(self):
-        if self.wagered_option == 0:
-            reward = self.wagered_amount * self.bet.get_win_odds()
-        elif self.wagered_option == 1:
-            reward = self.wagered_amount * self.bet.get_draw_odds()
-        else:
-            reward = self.wagered_amount * self.bet.get_loose_odds()
-
+        reward = self.wagered_amount * 1.67
         self.user.wallet = max(self.user.wallet + reward, 0)
         self.user.save()
 

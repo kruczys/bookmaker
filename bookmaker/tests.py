@@ -7,41 +7,6 @@ from .models import UserProfile, Bet, Comment
 
 
 class BetModelTestCase(TestCase):
-    def test_correct_total_money(self):
-        bet = Bet.objects.create(win_money_wagered=10, draw_money_wagered=10, loose_money_wagered=10,
-                                 resolve_date=timezone.now())
-        self.assertEqual(bet.get_total_money_wagered(), 30)
-
-    def test_correct_win_odds(self):
-        bet = Bet.objects.create(win_money_wagered=10, draw_money_wagered=10, loose_money_wagered=10,
-                                 resolve_date=timezone.now())
-        correct_odds = 30 / 10
-        self.assertEqual(bet.get_win_odds(), correct_odds)
-
-    def test_correct_draw_odds(self):
-        bet = Bet.objects.create(win_money_wagered=10, draw_money_wagered=10, loose_money_wagered=10,
-                                 resolve_date=timezone.now())
-        correct_odds = 30 / 10
-        self.assertEqual(bet.get_draw_odds(), correct_odds)
-
-    def test_correct_lose_odds(self):
-        bet = Bet.objects.create(win_money_wagered=10, draw_money_wagered=10, loose_money_wagered=10,
-                                 resolve_date=timezone.now())
-        correct_odds = 30 / 10
-        self.assertEqual(bet.get_loose_odds(), correct_odds)
-
-    def test_no_money_wagered_win_odds(self):
-        bet = Bet.objects.create(win_money_wagered=0, resolve_date=timezone.now())
-        self.assertEqual(bet.get_win_odds(), 1)
-
-    def test_no_money_wagered_draw_odds(self):
-        bet = Bet.objects.create(draw_money_wagered=0, resolve_date=timezone.now())
-        self.assertEqual(bet.get_win_odds(), 1)
-
-    def test_no_money_wagered_lose_odds(self):
-        bet = Bet.objects.create(loose_money_wagered=0, resolve_date=timezone.now())
-        self.assertEqual(bet.get_loose_odds(), 1)
-
     def test_resolved_bet(self):
         bet = Bet.objects.create(resolve_date=timezone.now() + timezone.timedelta(days=1))
         self.assertEqual(bet.is_resolved(), True)
