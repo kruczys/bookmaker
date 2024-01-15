@@ -4,6 +4,7 @@
 
 {% block content %}
     <h1>{{ bet.bet_text }}</h1>
+    <a href="{% url 'bookmaker:create_comment' bet.id%}">Dodaj komentarz</a>
     {% for comment in comments %}
         <h3>{{ comment.user }}</h3>
         <p>{{ comment.comment_text }}</p>

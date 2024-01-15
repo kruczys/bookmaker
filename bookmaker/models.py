@@ -1,5 +1,3 @@
-from random import randint
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
@@ -82,6 +80,9 @@ class UserBet(models.Model):
         reward = self.wagered_amount * 1.67
         self.user.wallet = max(self.user.wallet + reward, 0)
         self.user.save()
+
+    def __str__(self):
+        return self.bet.bet_text
 
 
 @receiver(post_save, sender=Bet)

@@ -1,6 +1,6 @@
 from django import forms
 
-from bookmaker.models import Bet, UserBet
+from bookmaker.models import Bet, UserBet, Comment
 
 
 class CreateBetForm(forms.ModelForm):
@@ -20,4 +20,13 @@ class UserBetForm(forms.ModelForm):
         widgets = {
             'wagered_amount': forms.NumberInput(attrs={'class': 'form-control'}),
             'wagered_option': forms.Select(attrs={'class': "form-control"}),
+        }
+
+
+class CreateCommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['comment_text']
+        widgets = {
+            'comment_text': forms.Textarea(attrs={'class': 'form-control'})
         }

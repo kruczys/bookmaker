@@ -2,8 +2,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse_lazy
 from django.views import generic
+from django.utils import timezone
 
-from .forms import CreateBetForm, UserBetForm
+from .forms import CreateBetForm, UserBetForm, CreateCommentForm
 from .models import Bet, UserProfile, UserBet
 
 
@@ -48,6 +49,21 @@ def create_bet(request):
     return render(request, 'bookmaker/create_bet.html', {'form': form})
 
 
+def create_comment(request, bet_id):
+    if request.method == 'POST':
+        form = CreateCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.bet = Bet.objects.get(id=bet_id)
+            comment.user = UserProfile.objects.get(user=request.user)
+            comment.pub_date = timezone.now()
+            comment.save()
+            return redirect('bookmaker:comments', bet_id=comment.bet.id)
+    else:
+        form = CreateCommentForm()
+    return render(request, 'bookmaker/create_comment.html', {'form': form})
+
+
 def place_bet(request, bet_id):
     bet = get_object_or_404(Bet, pk=bet_id)
     user_profile = UserProfile.objects.get(user=request.user)
@@ -58,7 +74,6 @@ def place_bet(request, bet_id):
             user_bet = form.save(commit=False)
             user_bet.user = user_profile
             user_bet.bet = bet
-            user_bet.save()
             user_profile.create_bet(bet, user_bet.wagered_amount, user_bet.wagered_option)
             return redirect('bookmaker:place_bet', bet_id=bet.id)
     else:
