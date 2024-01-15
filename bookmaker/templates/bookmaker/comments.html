@@ -9,5 +9,8 @@
         <h3>{{ comment.user }}</h3>
         <p>{{ comment.comment_text }}</p>
         <p>{{ comment.pub_date }} - {{ comment.likes }} polubień</p>
+        {% if user.is_authenticated %}
+            <a href="{% url 'bookmaker:like_comment' comment_id=comment.id bet_id=comment.bet.id%}">Polub</a>
+        {% endif %}
     {% endfor %}
 {% endblock %}

@@ -103,5 +103,4 @@ class Comment(models.Model):
 
     def increment_likes(self):
         self.likes += 1
-        self.user.save()
         self.save()

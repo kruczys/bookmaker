@@ -1,11 +1,12 @@
 from django.contrib.auth.forms import UserCreationForm
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
-from django.urls import reverse_lazy
-from django.views import generic
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.views import generic
 
 from .forms import CreateBetForm, UserBetForm, CreateCommentForm
-from .models import Bet, UserProfile, UserBet
+from .models import Bet, UserProfile, UserBet, Comment
 
 
 def index(request):
@@ -80,3 +81,9 @@ def place_bet(request, bet_id):
         form = UserBetForm()
 
     return render(request, "place_bet.html", {'form': form, 'bet': bet})
+
+
+def like_comment(request, comment_id, bet_id):
+    comment = Comment.objects.get(id=comment_id)
+    comment.increment_likes()
+    return HttpResponseRedirect(reverse("bookmaker:comments", args=(comment.bet.id, )))
