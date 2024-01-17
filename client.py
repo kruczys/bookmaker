@@ -40,10 +40,6 @@ def create_bet():
         "title": bet_text,
         "resolve_date": resolve_date.isoformat(),
         "result": randint(0, 2),
-        "win_amount_wagered": 0,
-        "draw_amount_wagered": 0,
-        "loose_amount_wagered": 0,
-        "total_amount_wagered": 0
     }
 
     response = requests.post(url=BASE_URL + 'bet', json=data)
