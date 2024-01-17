@@ -7,7 +7,6 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 app = FastAPI()
-SECONDS_PER_MINUTE = 60 * 60
 
 
 class User(BaseModel):
@@ -32,8 +31,8 @@ class Bet(BaseModel):
 
 
 class UserBet(BaseModel):
-    user_id: int
-    bet_id: int
+    user_id: str
+    bet_id: str
     amount: int
     option: int
     resolved: bool = False
@@ -46,8 +45,9 @@ class UserBet(BaseModel):
 
 
 class Comment(BaseModel):
-    id: int
-    owner_username: str
+    bet_id: str
+    creator_username: str
+    text: str
     create_date: datetime
     likes: int
 
@@ -130,6 +130,14 @@ async def get_bets():
     return {"bets": bets}
 
 
+@app.get("/bet/{substring}")
+async def get_bets_by_title(substring: str):
+    query = [bet for bet_id, bet in bets.items() if substring in bet.title]
+    if query:
+        return {"bets": query}
+    return HTTPException(status_code=404, detail="Bets not found")
+
+
 @app.post("/bet")
 async def create_bet(bet: Bet):
     bet_id = str(uuid4())
@@ -194,7 +202,40 @@ async def create_user_bet(user_bet: UserBet):
 
 @app.post("/comment")
 async def create_comment(comment: Comment):
-    if comment.owner_username in usernames:
+    if comment.creator_username in usernames:
         comments.append(comment)
         return {"message": "Comment created successfully"}
     return HTTPException(status_code=404, detail="User not found")
+
+
+@app.get("/comments")
+async def get_comments():
+    return {"comments": comments}
+
+
+@app.get("comments/{username_substring}")
+async def get_comments_by_username(username_substring: str):
+    query = [comment for comment in comments if username_substring in comment.creator_username]
+    if query:
+        return {"comments": query}
+    return HTTPException(status_code=404, detail="User not found")
+
+
+@app.put("comments/{bet_id}/{username}")
+async def update_comment(comment: Comment, bet_id: int, username: str):
+    if bet_id in bets and username in usernames:
+        for com in comments:
+            if com.bet_id == bet_id and com.username == username:
+                com.text = comment.text
+                return {"message": "Comment updated successfully"}
+    return HTTPException(status_code=404, detail="No bet or username found")
+
+
+@app.delete("comments/{bet_id}/{username}")
+async def delete_comment(bet_id: int, username: str):
+    if bet_id in bets and username in usernames:
+        for comment in comments:
+            if comment.bet_id == bet_id and comment.creator_username == username:
+                comments.remove(comment)
+                return {"message": "Comment deleted successfully"}
+    return HTTPException(status_code=404, detail="No bet or username found")
