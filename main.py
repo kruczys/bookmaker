@@ -56,13 +56,19 @@ async def create_user(user: User):
 
 @app.delete('/auth/delete')
 async def delete_user(user: User, user_id: str):
-    del users[user_id]
-    usernames.remove(user.username)
+    if users[user_id].username == user.username:
+        del users[user_id]
+        usernames.remove(user.username)
+    else:
+        return {"message": "User not found"}
 
 
 @app.put("/auth/update_username")
 async def update_username(user_id: str, new_username: str):
+    old_username = users[user_id].username
+    usernames.remove(old_username)
     users[user_id].username = new_username
+    usernames.append(new_username)
     return {"message": "Username updated successfully"}
 
 
@@ -125,4 +131,13 @@ async def update_user_bets(user_bet: UserBet):
         index = user_bets.index(user_bet)
         user_bets[index] = user_bet
         return {"message": "User's bet updated successfully"}
+    return {"message": "User's bet not found"}
+
+
+@app.delete("/user_bets")
+async def delete_user_bet(user_bet: UserBet):
+    for ub in user_bets:
+        if ub.bet_id == user_bet.bet_id and ub.user_id == user_bet.user_id:
+            user_bets.remove(ub)
+            return {"message": "User's bet deleted successfully"}
     return {"message": "User's bet not found"}
