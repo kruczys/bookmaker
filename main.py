@@ -1,3 +1,5 @@
+import paho.mqtt.client as mqtt
+
 from datetime import datetime
 from typing import List, Dict
 from uuid import uuid4
@@ -8,16 +10,26 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
+client = mqtt.Client()
+client.connect("mqtt.eclipse.org")
+client.loop_start()
+
 
 class User(BaseModel):
     username: str
     balance: float
 
-    def reduce_balance(self, amount: int):
+    def reduce_balance(self, amount: float):
         if self.balance < amount:
             raise ValueError("Not enough money")
         else:
             self.balance -= amount
+
+    def increase_balance(self, amount: float):
+        if self.balance >= 0:
+            self.balance += amount
+        else:
+            raise ValueError("Amount cannot be below 0")
 
 
 class Bet(BaseModel):
@@ -69,9 +81,11 @@ class BetManager:
         user_bets_copy = self.user_bets[:]
         for user_bet in user_bets_copy:
             if self.bets[str(user_bet.bet_id)].is_resolved():
+                message = f"{bets[user_bet.bet_id].title} just got resolved"
+                client.publish("bets/resolved", message)
                 user_bet.resolve()
                 if self.bets[str(user_bet.bet_id)].result == user_bet.option:
-                    self.users[str(user_bet.user_id)].balance += user_bet.amount * 1.67
+                    self.users[str(user_bet.user_id)].increase_balance(user_bet.amount * 1.67)
                 self.user_bets.remove(user_bet)
 
 
@@ -197,7 +211,16 @@ async def create_user_bet(user_bet: UserBet):
         users[user_bet.user_id].reduce_balance(user_bet.amount)
         user_bets.append(user_bet)
         return {"message": "User's bet created successfully"}
-    return HTTPException(status_code=406, detail="Not acceptable, begone")
+    return HTTPException(status_code=404, detail="User's bet not found")
+
+
+@app.delete("/user_bets")
+async def delete_user_bet(user_bet: UserBet):
+    if is_valid_user_bet(user_bet):
+        users[user_bet.user_id].increase_balance(user_bet.amount)
+        user_bet.remove(user_bet)
+        return {"message": "User's bet deleted successfully"}
+    return HTTPException(status_code=404, detail="User's bet not found")
 
 
 @app.post("/comment")
