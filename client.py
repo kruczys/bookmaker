@@ -39,7 +39,6 @@ def create_bet():
         "creator_username": creator_username,
         "title": bet_text,
         "resolve_date": resolve_date.isoformat(),
-        "result": randint(0, 2),
     }
 
     response = requests.post(url=BASE_URL + 'bet', json=data)

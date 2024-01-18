@@ -1,18 +1,30 @@
-import paho.mqtt.client as mqtt
-
 from datetime import datetime
+from random import randint
 from typing import List, Dict
 from uuid import uuid4
 
+import paho.mqtt.client as mqtt
 from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
 
+from celeryapp import celery
+
 app = FastAPI()
 
 client = mqtt.Client()
-client.connect("mqtt.eclipse.org")
+client.connect("localhost", 1883)
 client.loop_start()
+
+
+def on_connect(client, userdata, flags, rc):
+    client.subscribe("bets/resolved")
+    client.subscribe("comments/new")
+    client.subscribe("chat/all")
+    client.subscribe("scoreboard/change")
+
+
+client.on_connect = on_connect
 
 
 class User(BaseModel):
@@ -30,6 +42,12 @@ class User(BaseModel):
             self.balance += amount
         else:
             raise ValueError("Amount cannot be below 0")
+
+    def get_ranking_dict(self):
+        return {
+            "username": self.username,
+            "balance": self.balance
+        }
 
 
 class Bet(BaseModel):
@@ -97,6 +115,19 @@ user_bets = []
 bet_manager = BetManager(users=users, user_bets=user_bets, bets=bets)
 
 
+@celery.task
+def resolve_bets():
+    bet_manager.resolve_bets()
+
+
+celery.conf.beat_schedule = {
+    'resolve-bets-every-minute': {
+        'task': 'resolve_bets',
+        'schedule': 60.0
+    },
+}
+
+
 @app.post("/auth/signup")
 async def create_user(user: User):
     user_id = str(uuid4())
@@ -155,6 +186,7 @@ async def get_bets_by_title(substring: str):
 @app.post("/bet")
 async def create_bet(bet: Bet):
     bet_id = str(uuid4())
+    bet.result = randint(0, 2)
     bets[bet_id] = bet
     return {"message": "Bet created successfully"}
 
@@ -218,22 +250,24 @@ async def create_user_bet(user_bet: UserBet):
 async def delete_user_bet(user_bet: UserBet):
     if is_valid_user_bet(user_bet):
         users[user_bet.user_id].increase_balance(user_bet.amount)
-        user_bet.remove(user_bet)
+        user_bets.remove(user_bet)
         return {"message": "User's bet deleted successfully"}
     return HTTPException(status_code=404, detail="User's bet not found")
 
 
-@app.post("/comment")
-async def create_comment(comment: Comment):
+@app.post("/comment/{bet_id}")
+async def create_comment(comment: Comment, bet_id: str):
     if comment.creator_username in usernames:
+        comment.bet_id = bet_id
         comments.append(comment)
         return {"message": "Comment created successfully"}
     return HTTPException(status_code=404, detail="User not found")
 
 
-@app.get("/comments")
-async def get_comments():
-    return {"comments": comments}
+@app.get("/comments/{bet_id}")
+async def get_comments(bet_id: str):
+    query = [comment for comment in comments if comment.bet_id == bet_id]
+    return {"comments": query}
 
 
 @app.get("comments/{username_substring}")
