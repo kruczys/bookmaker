@@ -150,7 +150,7 @@ async def delete_user(username: str):
     return HTTPException(status_code=404, detail="User does not exist")
 
 
-@app.put("/auth/update_username/{username}")
+@app.put("/auth/update_username/{username}/{new_username}")
 async def update_username(username: str, new_username: str):
     if new_username not in usernames:
         usernames.remove(username)
@@ -170,14 +170,24 @@ async def get_user_id(username: str):
     raise HTTPException(status_code=404, detail="User not found")
 
 
+@app.get("/auth/user_balance/{username}")
+async def get_user_balance(username: str):
+    if username in usernames:
+        user_id_info = await get_user_id(username)
+        user_id = user_id_info["user_id"]
+        return {"balance": users[user_id].balance}
+    else:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
 @app.get("/bet")
 async def get_bets():
     return {"bets": bets}
 
 
-@app.get("/bet/{substring}")
-async def get_bets_by_title(substring: str):
-    query = [bet for bet_id, bet in bets.items() if substring in bet.title]
+@app.get("/bet/search")
+async def get_bets_by_title(q: str = ""):
+    query = [bet for bet_id, bet in bets.items() if q.lower() in bet.title.lower()]
     if query:
         return {"bets": query}
     return HTTPException(status_code=404, detail="Bets not found")
@@ -186,7 +196,6 @@ async def get_bets_by_title(substring: str):
 @app.post("/bet")
 async def create_bet(bet: Bet):
     bet_id = str(uuid4())
-    bet.result = randint(0, 2)
     bets[bet_id] = bet
     return {"message": "Bet created successfully"}
 
