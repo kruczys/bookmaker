@@ -63,7 +63,7 @@ class Bet(BaseModel):
 class UserBet(BaseModel):
     user_id: str
     bet_id: str
-    amount: int
+    amount: float
     option: int
     resolved: bool = False
 
@@ -208,17 +208,17 @@ async def get_bet_id(title: str):
     raise HTTPException(status_code=404, detail="Bet not found")
 
 
-@app.put("/bet/{title}")
-async def update_bet(bet: Bet, title: str, creator_username: str):
+@app.put("/bet/{title}/{creator_username}/{new_title}")
+async def update_bet(title: str, creator_username: str, new_title: str):
     bet_id_info = await get_bet_id(title)
     bet_id = bet_id_info["bet_id"]
     if bet_id and bets[bet_id].creator_username == creator_username:
-        bets[bet_id] = bet
-        return {"message": "Bets updated successfully"}
+        bets[bet_id].title = new_title
+        return {"message": "Bet updated successfully"}
     return HTTPException(status_code=404, detail="Bet not found or user is not creator")
 
 
-@app.delete("/bet/{title}")
+@app.delete("/bet/{title}/{creator_username}")
 async def delete_bet(title: str, creator_username: str):
     bet_id_info = await get_bet_id(title)
     bet_id = bet_id_info["bet_id"]
@@ -246,20 +246,27 @@ def is_valid_user_bet(user_bet: UserBet) -> bool:
     )
 
 
+def exists_user_bet(bet_id, user_id) -> bool:
+    for user_bet in user_bets:
+        if bet_id == user_bet.bet_id and user_id == user_bet.user_id:
+            return True
+    return False
+
+
 @app.post("/user_bets")
 async def create_user_bet(user_bet: UserBet):
-    if is_valid_user_bet(user_bet):
+    if is_valid_user_bet(user_bet) and not exists_user_bet(user_bet.bet_id, user_bet.user_id):
         users[user_bet.user_id].reduce_balance(user_bet.amount)
         user_bets.append(user_bet)
         return {"message": "User's bet created successfully"}
-    return HTTPException(status_code=404, detail="User's bet not found")
+    return HTTPException(status_code=400, detail="Invalid data")
 
 
-@app.delete("/user_bets")
-async def delete_user_bet(user_bet: UserBet):
-    if is_valid_user_bet(user_bet):
-        users[user_bet.user_id].increase_balance(user_bet.amount)
-        user_bets.remove(user_bet)
+@app.delete("/user_bets/{bet_id}/{user_id}")
+async def delete_user_bet(bet_id: str, user_id: str):
+    if exists_user_bet(bet_id, user_id):
+        ub = next((ub for ub in user_bets if ub.bet_id == bet_id and ub.user_id == user_id), None)
+        user_bets.remove(ub)
         return {"message": "User's bet deleted successfully"}
     return HTTPException(status_code=404, detail="User's bet not found")
 
