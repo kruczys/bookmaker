@@ -84,6 +84,31 @@ class CommandLineInterface:
         response = requests.delete(f"{self.base_url}/user_bets/{bet_id}/{user_id}")
         client_logs.append({f"DELETE_USER_BET {datetime.now()}": response.json()})
 
+    def create_comment(self, bet_id: str, creator_username: str, text: str) -> None:
+        data = {
+            "bet_id": bet_id,
+            "creator_username": creator_username,
+            "text": text,
+            "create_date": datetime.now().isoformat(),
+            "likes": 0
+        }
+        response = requests.post(f"{self.base_url}/comment/{bet_id}", json=data)
+        client_logs.append({f"CREATE_COMMENT {datetime.now()}": response.json()})
+
+    def get_comments_by_bet_id(self, bet_id: str) -> None:
+        response = requests.get(f"{self.base_url}/comment/{bet_id}")
+        client_logs.append({f"GET_COMMENTS_BY_BET_ID {datetime.now()}": response.json()})
+
+    def search_user_comment(self, username_substring: str) -> None:
+        response = requests.get(f"{self.base_url}/comment/search?username_substring={username_substring}")
+        client_logs.append({f"SEARCH_USER_COMMENTS {datetime.now()}": response.json()})
+
+    def update_user_comment(self, bet_id: str, creator_username: str, partial_text: str = ""):
+        pass
+
+    def delete_comment(self, bet_id: str, creator_username: str, partial_text: str = ""):
+        pass
+
 
 def main():
     cli = CommandLineInterface(BASE_URL)

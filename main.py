@@ -280,22 +280,22 @@ async def create_comment(comment: Comment, bet_id: str):
     return HTTPException(status_code=404, detail="User not found")
 
 
-@app.get("/comments/{bet_id}")
+@app.get("/comment/{bet_id}")
 async def get_comments(bet_id: str):
     query = [comment for comment in comments if comment.bet_id == bet_id]
     return {"comments": query}
 
 
-@app.get("comments/{username_substring}")
-async def get_comments_by_username(username_substring: str):
-    query = [comment for comment in comments if username_substring in comment.creator_username]
+@app.get("comment/search")
+async def get_comments_by_username(username_substring: str = ""):
+    query = [comment for comment in comments if username_substring.lower() in comment.creator_username.lower()]
     if query:
         return {"comments": query}
     return HTTPException(status_code=404, detail="User not found")
 
 
 @app.put("comments/{bet_id}/{username}")
-async def update_comment(comment: Comment, bet_id: int, username: str):
+async def update_comment(bet_id: int, username: str, partial_text: str):
     if bet_id in bets and username in usernames:
         for com in comments:
             if com.bet_id == bet_id and com.username == username:
@@ -305,7 +305,7 @@ async def update_comment(comment: Comment, bet_id: int, username: str):
 
 
 @app.delete("comments/{bet_id}/{username}")
-async def delete_comment(bet_id: int, username: str):
+async def delete_comment(bet_id: int, username: str, partial_text: str):
     if bet_id in bets and username in usernames:
         for comment in comments:
             if comment.bet_id == bet_id and comment.creator_username == username:
