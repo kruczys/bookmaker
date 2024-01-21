@@ -12,5 +12,5 @@ celery = make_celery('main')
 # sudo systemctl enable mosquitto
 # sudo systemctl start mosquitto
 # redis-server
-# celery -A main.celery worker --loglevel=info
-# celery -A main.celery beat --loglevel=info
+# celery -A tasks.celery worker --loglevel=info
+# celery -A tasks.celery beat --loglevel=info

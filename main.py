@@ -1,5 +1,4 @@
 from datetime import datetime
-from random import randint
 from typing import List, Dict
 from uuid import uuid4
 
@@ -8,7 +7,7 @@ from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from celeryapp import celery
+from initialgame import create_initial_game
 
 app = FastAPI()
 
@@ -18,6 +17,7 @@ client.loop_start()
 
 
 def on_connect(client, userdata, flags, rc):
+    client.subscribe("bets/created")
     client.subscribe("bets/resolved")
     client.subscribe("comments/new")
     client.subscribe("chat/all")
@@ -79,7 +79,6 @@ class Comment(BaseModel):
     creator_username: str
     text: str
     create_date: datetime
-    likes: int
 
     def increment_likes(self):
         self.likes += 1
@@ -96,15 +95,18 @@ class BetManager:
         self.bets = bets
 
     def resolve_bets(self):
-        user_bets_copy = self.user_bets[:]
-        for user_bet in user_bets_copy:
-            if self.bets[str(user_bet.bet_id)].is_resolved():
-                message = f"{bets[user_bet.bet_id].title} just got resolved"
-                client.publish("bets/resolved", message)
-                user_bet.resolve()
-                if self.bets[str(user_bet.bet_id)].result == user_bet.option:
-                    self.users[str(user_bet.user_id)].increase_balance(user_bet.amount * 1.67)
-                self.user_bets.remove(user_bet)
+        if len(bets) > 0:
+            user_bets_copy = self.user_bets[:]
+            for user_bet in user_bets_copy:
+                if self.bets[str(user_bet.bet_id)].is_resolved():
+                    message = f"{bets[user_bet.bet_id].title} just got resolved"
+                    client.publish("bets/resolved", message)
+                    user_bet.resolve()
+                    if self.bets[str(user_bet.bet_id)].result == user_bet.option:
+                        self.users[str(user_bet.user_id)].increase_balance(user_bet.amount * 1.67)
+                    self.user_bets.remove(user_bet)
+        else:
+            return {"message": "No bets in database"}
 
 
 users = {}
@@ -112,20 +114,8 @@ usernames = []
 bets = {}
 comments = []
 user_bets = []
-bet_manager = BetManager(users=users, user_bets=user_bets, bets=bets)
 
-
-@celery.task
-def resolve_bets():
-    bet_manager.resolve_bets()
-
-
-celery.conf.beat_schedule = {
-    'resolve-bets-every-minute': {
-        'task': 'resolve_bets',
-        'schedule': 60.0
-    },
-}
+create_initial_game(User, Bet, UserBet, Comment, users, bets, user_bets)
 
 
 @app.post("/auth/signup")
@@ -182,7 +172,8 @@ async def get_user_balance(username: str):
 
 @app.get("/bet")
 async def get_bets():
-    return {"bets": bets}
+    query = [bet for bet in bets.values() if not bet.is_resolved()]
+    return {"bets": query}
 
 
 @app.get("/bet/search")
@@ -197,6 +188,7 @@ async def get_bets_by_title(q: str = ""):
 async def create_bet(bet: Bet):
     bet_id = str(uuid4())
     bets[bet_id] = bet
+    client.publish("bets/created", f"New bet added: {bet.title}!")
     return {"message": "Bet created successfully"}
 
 

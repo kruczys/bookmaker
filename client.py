@@ -103,10 +103,13 @@ class CommandLineInterface:
         response = requests.get(f"{self.base_url}/comment/search?username_substring={username_substring}")
         client_logs.append({f"SEARCH_USER_COMMENTS {datetime.now()}": response.json()})
 
-    def update_user_comment(self, bet_id: str, creator_username: str, partial_text: str = ""):
+    def update_user_comment(self, bet_id: str, creator_username: str, partial_text: str = "") -> None:
         pass
 
-    def delete_comment(self, bet_id: str, creator_username: str, partial_text: str = ""):
+    def delete_comment(self, bet_id: str, creator_username: str, partial_text: str = "") -> None:
+        pass
+
+    def chat(self):
         pass
 
 
