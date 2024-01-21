@@ -1,7 +1,12 @@
+import json
+import os
+import time
 from datetime import datetime
 from random import randint
 
 import requests
+
+from main import client
 
 BASE_URL = 'http://127.0.0.1:8000'
 client_user = {"username": ""}
@@ -103,35 +108,48 @@ class CommandLineInterface:
         response = requests.get(f"{self.base_url}/comment/search?username_substring={username_substring}")
         client_logs.append({f"SEARCH_USER_COMMENTS {datetime.now()}": response.json()})
 
-    def update_user_comment(self, bet_id: str, creator_username: str, partial_text: str = "") -> None:
-        pass
+    def update_user_comment(self, bet_id: str, creator_username: str, new_text: str = "") -> None:
+        response = requests.put(f"{self.base_url}/{bet_id}/{creator_username}?new_text={new_text}")
+        client_logs.append({f"UPDATE_USER_COMMENT {datetime.now()}": response.json()})
 
-    def delete_comment(self, bet_id: str, creator_username: str, partial_text: str = "") -> None:
-        pass
+    def delete_comment(self, bet_id: str, creator_username: str) -> None:
+        response = requests.delete(f"{self.base_url}/{bet_id}/{creator_username}")
+        client_logs.append({f"DELETE_COMMENT {datetime.now()}": response.json()})
 
-    def chat(self):
-        pass
+    def chat(self, username: str, message: str):
+        data = {"username": username, "message": message}
+        client.publish("chat/all", json.dumps(data))
+
+    def clear_console(self) -> None:
+        if os.name == "nt":
+            os.system('cls')
+        else:
+            os.system("clear")
 
 
 def main():
     cli = CommandLineInterface(BASE_URL)
-    username = input("Enter your username: ")
-    cli.signup_user(username)
-    cli.get_my_id(username)
-    cli.get_my_balance(username)
-    cli.update_username(username, username + "@example.com")
-    cli.create_bet(username, title="My bet", resolve_date=datetime(year=2077, month=12, day=10).isoformat())
-    cli.get_bets()
-    cli.search_bets("be")
-    cli.get_bet_id("My bet")
-    cli.update_bet_title("My bet", "New bet title", username)
-    cli.create_user_bet(cli.get_my_id(username + "@example.com"), cli.get_bet_id("New bet title"), 10.0, 1)
-    cli.get_my_balance(username + "@example.com")
-    cli.get_user_bets(cli.get_my_id(username + "@example.com"))
-    cli.delete_bet("New bet title", username)
-    cli.delete_user(username + "@example.com")
-    for log in client_logs:
-        print(log)
+    username = input("wpisz swoj nick: ")
+
+    while True:
+        cli.clear_console()
+        print("Spis komend: ENTER_CHAT, EXIT_CHAT, CHANGE_USERNAME, LEAVE_BYE, CLEAR_CONSOLE, SHOW_BETS, SHOW_BALANCE")
+        user_command = input("Twoja komenda: ")
+
+        match user_command:
+            case "ENTER_CHAT":
+                cli.clear_console()
+                while user_command != "EXIT_CHAT":
+                    user_command = input()
+                    client.subscribe("chat/all")
+                    cli.chat(username, user_command)
+            case "EXIT_CHAT":
+                print("WYSZEDLES Z CHATU")
+                time.sleep(2)
+                client.unsubscribe("chat/all")
+            case "LEAVE_BYE":
+                print("BYE BYE")
+                break
 
 
 if __name__ == "__main__":

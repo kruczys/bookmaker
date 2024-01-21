@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import List, Dict
 from uuid import uuid4
@@ -16,12 +17,17 @@ client.connect("localhost", 1883)
 client.loop_start()
 
 
+def on_chat_message(client, userdata, message):
+    message_data = json.loads(message.payload.decode("utf-8"))
+    print(f"{message_data['username']}: {message_data['message']}")
+
+
 def on_connect(client, userdata, flags, rc):
-    client.subscribe("bets/created")
-    client.subscribe("bets/resolved")
-    client.subscribe("comments/new")
-    client.subscribe("chat/all")
-    client.subscribe("scoreboard/change")
+    # client.subscribe("bets/created")
+    # client.subscribe("bets/resolved")
+    # client.subscribe("comments/new")
+    client.message_callback_add("chat/all", on_chat_message)
+    # client.subscribe("scoreboard/change")
 
 
 client.on_connect = on_connect
@@ -264,9 +270,8 @@ async def delete_user_bet(bet_id: str, user_id: str):
 
 
 @app.post("/comment/{bet_id}")
-async def create_comment(comment: Comment, bet_id: str):
+async def create_comment(comment: Comment):
     if comment.creator_username in usernames:
-        comment.bet_id = bet_id
         comments.append(comment)
         return {"message": "Comment created successfully"}
     return HTTPException(status_code=404, detail="User not found")
@@ -287,17 +292,17 @@ async def get_comments_by_username(username_substring: str = ""):
 
 
 @app.put("comments/{bet_id}/{username}")
-async def update_comment(bet_id: int, username: str, partial_text: str):
+async def update_comment(bet_id: int, username: str, new_text: str):
     if bet_id in bets and username in usernames:
         for com in comments:
             if com.bet_id == bet_id and com.username == username:
-                com.text = comment.text
+                com.text = new_text
                 return {"message": "Comment updated successfully"}
     return HTTPException(status_code=404, detail="No bet or username found")
 
 
 @app.delete("comments/{bet_id}/{username}")
-async def delete_comment(bet_id: int, username: str, partial_text: str):
+async def delete_comment(bet_id: int, username: str):
     if bet_id in bets and username in usernames:
         for comment in comments:
             if comment.bet_id == bet_id and comment.creator_username == username:
