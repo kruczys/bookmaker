@@ -127,6 +127,7 @@ create_initial_game(User, Bet, UserBet, Comment, users, bets, user_bets)
 @app.post("/auth/signup")
 async def create_user(user: User):
     user_id = str(uuid4())
+    user.balance = 1000
     if user.username not in usernames:
         users[user_id] = user
         usernames.append(user.username)

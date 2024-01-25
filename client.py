@@ -36,11 +36,12 @@ class CommandLineInterface:
         client_logs.append({f"GET_MY_ID {datetime.now()}": response.json()})
         return user_id
 
-    def get_my_balance(self, username: str) -> None:
+    def get_my_balance(self, username: str) -> str:
         response = requests.get(f"{self.base_url}/auth/user_balance/{username}")
         client_logs.append({f"GET_MY_BALANCE {datetime.now()}": response.json()})
+        return response.json()["balance"]
 
-    def create_bet(self, username: str, title: str, resolve_date: str) -> None:
+    def create_bet(self, username: str, title: str, resolve_date: str):
         data = {"creator_username": username,
                 "title": title,
                 "resolve_date": resolve_date,
@@ -48,10 +49,12 @@ class CommandLineInterface:
                 }
         response = requests.post(f"{self.base_url}/bet", json=data)
         client_logs.append({f"CREATE_BET {datetime.now()}": response.json()})
+        return "BET CREATED"
 
-    def get_bets(self) -> None:
+    def get_bets(self):
         response = requests.get(f"{self.base_url}/bet")
         client_logs.append({f"GET_BETS {datetime.now()}": response.json()})
+        return response.json()
 
     def search_bets(self, title_substring: str) -> None:
         response = requests.get(f"{self.base_url}/bet/search?q={title_substring}")
@@ -71,7 +74,8 @@ class CommandLineInterface:
         response = requests.delete(f"{self.base_url}/bet/{title}/{username}")
         client_logs.append({f"DELETE_BET {datetime.now()}": response.json()})
 
-    def create_user_bet(self, user_id: str, bet_id: str, amount: float, option: int) -> None:
+    def create_user_bet(self, user_id: str, bet_title: str, amount: float, option: int) -> None:
+        bet_id = self.get_bet_id(bet_title)
         data = {
             "user_id": user_id,
             "bet_id": bet_id,
@@ -130,10 +134,16 @@ class CommandLineInterface:
 def main():
     cli = CommandLineInterface(BASE_URL)
     username = input("wpisz swoj nick: ")
+    cli.signup_user(username)
 
     while True:
         cli.clear_console()
-        print("Spis komend: ENTER_CHAT, EXIT_CHAT, CHANGE_USERNAME, LEAVE_BYE, CLEAR_CONSOLE, SHOW_BETS, SHOW_BALANCE")
+        print("KOMENDY")
+        print("ENTER_CHAT, EXIT_CHAT"),
+        print("LEAVE_BYE, CLEAR_CONSOLE"),
+        print("CHANGE_USERNAME, SHOW_BALANCE, SHOW_MY_BETS, SHOW_SCOREBOARD, DELETE_ME, SHOW_MY_ID")
+        print("SHOW_COMMENT, CREATE_COMMENT, DELETE_COMMENT, UPDATE_COMMENT, SEARCH_USER_COMMENT")
+        print("SHOW_BETS, BET_SOMETHING, DELETE_WAGERED_BET, CREATE_BET, DELETE_CREATED_BET, UPDATE_CREATED_BET_TITLE")
         user_command = input("Twoja komenda: ")
 
         match user_command:
@@ -144,12 +154,88 @@ def main():
                     client.subscribe("chat/all")
                     cli.chat(username, user_command)
             case "EXIT_CHAT":
-                print("WYSZEDLES Z CHATU")
+                print("You left the chat.")
                 time.sleep(2)
                 client.unsubscribe("chat/all")
+            case "CHANGE_USERNAME":
+                new_username = input("Enter your new username: ")
+                cli.update_username(username, new_username)
+                username = new_username
             case "LEAVE_BYE":
-                print("BYE BYE")
+                print("Goodbye!")
                 break
+            case "CLEAR_CONSOLE":
+                cli.clear_console()
+            case "SHOW_BALANCE":
+                print(cli.get_my_balance(username))
+                input()
+            case "SHOW_MY_BETS":
+                user_id = cli.get_my_id(username)
+                cli.get_user_bets(user_id)
+            case "SHOW_SCOREBOARD":
+                cli.get_bets()
+            case "DELETE_ME":
+                cli.delete_user(username)
+                print("User deleted. Exiting the application.")
+                break
+            case "SHOW_MY_ID":
+                user_id = cli.get_my_id(username)
+                print(f"Your user ID is: {user_id}")
+            case "SHOW_COMMENT":
+                bet_id = input("Enter the bet ID to show comments for: ")
+                cli.get_comments_by_bet_id(bet_id)
+            case "CREATE_COMMENT":
+                bet_id = input("Enter the bet ID to comment on: ")
+                text = input("Enter your comment: ")
+                cli.create_comment(bet_id, username, text)
+            case "DELETE_COMMENT":
+                bet_id = input("Enter the bet ID for the comment to delete: ")
+                cli.delete_comment(bet_id, username)
+            case "UPDATE_COMMENT":
+                bet_id = input("Enter the bet ID for the comment to update: ")
+                new_text = input("Enter your new comment: ")
+                cli.update_user_comment(bet_id, username, new_text)
+            case "SEARCH_USER_COMMENT":
+                username_substring = input("Enter the username substring to search for in comments: ")
+                cli.search_user_comment(username_substring)
+            case "SHOW_BETS":
+                bets = cli.get_bets()["bets"]
+                for bet in bets:
+                    print(bet["title"], f"{bet["resolve_date"]}")
+                input()
+            case "BET_SOMETHING":
+                bet_title = input("Enter the bet title you want to bet on: ")
+                amount = float(input("Enter the amount you want to bet: "))
+                option = int(input("Enter your option (0, 1, or 2): "))
+                user_id = cli.get_my_id(username)
+                cli.create_user_bet(user_id, bet_title, amount, option)
+            case "DELETE_WAGERED_BET":
+                bet_id = input("Enter the bet ID of the bet you want to delete: ")
+                user_id = cli.get_my_id(username)
+                cli.delete_user_bet(bet_id, user_id)
+            case "CREATE_BET":
+                title = input("Enter the title of the bet: ")
+                resolve_year = int(input("Enter the resolve year: "))
+                resolve_month = int(input("Enter the resolve month: "))
+                resolve_day = int(input("Enter the resolve day: "))
+                resolve_hour = int(input("Enter the resolve hour: "))
+                resolve_minute = int(input("Enter the resolve minute: "))
+                resolve_date = datetime(
+                    year=resolve_year,
+                    month=resolve_month,
+                    day=resolve_day,
+                    hour=resolve_hour,
+                    minute=resolve_minute)
+                cli.create_bet(username, title, resolve_date.isoformat())
+            case "DELETE_CREATED_BET":
+                title = input("Enter the title of the bet you want to delete: ")
+                cli.delete_bet(title, username)
+            case "UPDATE_CREATED_BET_TITLE":
+                old_title = input("Enter the current title of the bet: ")
+                new_title = input("Enter the new title of the bet: ")
+                cli.update_bet_title(old_title, new_title, username)
+            case _:
+                print("Unknown command. Please try again.")
 
 
 if __name__ == "__main__":

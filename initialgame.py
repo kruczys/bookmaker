@@ -11,9 +11,9 @@ def create_initial_game(User, Bet, UserBet, Comment, users, bets, user_bets):
     mary_id = str(uuid4())
     adam_id = str(uuid4())
 
-    bet1 = Bet(creator_username='John', title='Bet1', resolve_date=datetime.now() + timedelta(minutes=1), result=0)
-    bet2 = Bet(creator_username='Adam', title='Bet2', resolve_date=datetime.now() + timedelta(minutes=2), result=1)
-    bet3 = Bet(creator_username='Mary', title='Bet3', resolve_date=datetime.now() + timedelta(minutes=3), result=0)
+    bet1 = Bet(creator_username='John', title='Polska vs Japonia', resolve_date=datetime.now() + timedelta(minutes=1), result=0)
+    bet2 = Bet(creator_username='Adam', title='Polska vs Wlochy', resolve_date=datetime.now() + timedelta(minutes=2), result=1)
+    bet3 = Bet(creator_username='Mary', title='Wlochy vs Japonia', resolve_date=datetime.now() + timedelta(minutes=3), result=0)
 
     bet1_id = str(uuid4())
     bet2_id = str(uuid4())
