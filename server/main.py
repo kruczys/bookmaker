@@ -8,7 +8,8 @@ from starlette import status
 
 from cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
     get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
-    update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title
+    update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title, \
+    get_all_user_bets
 from models import Comment, UserBet, Bet, User
 from mqtt import on_connect
 
@@ -80,67 +81,101 @@ async def api_create_bet(bet: Bet):
     return response
 
 
-@app.get("/bet/{bet_id}")
+@app.get(
+    "/bet/{bet_id}",
+    response_model=Bet,
+    response_model_by_alias=False,
+)
 async def api_get_bet(bet_id: str):
-    bet = await get_bet_by_id(bet_id)
-    if bet:
-        return bet
-    raise HTTPException(status_code=404, detail="Bet not found")
+    response = await get_bet_by_id(bet_id)
+    return response
 
 
-@app.put("/bet/{bet_id}")
-async def api_update_bet(bet_id: str, update_data: dict):
-    await update_bet_title(bet_id, update_data)
-    return {"message": "Bet updated successfully"}
+@app.put(
+    "/bet/{bet_id}",
+    response_model=Bet,
+    response_model_by_alias=False,
+)
+async def api_update_bet(bet_id: str, new_title: str):
+    response = await update_bet_title(bet_id, new_title)
+    return response
 
 
 @app.delete("/bet/{bet_id}")
 async def api_delete_bet(bet_id: str):
-    await delete_bet(bet_id)
-    return {"message": "Bet deleted successfully"}
+    response = await delete_bet(bet_id)
+    return response
 
 
-@app.post("/user_bets")
+@app.get(
+    "/user_bets",
+    response_model=List[UserBet],
+    response_model_by_alias=False,
+)
+async def api_get_all_user_bets(user_id: str):
+    response = await get_all_user_bets(user_id)
+    return response
+
+
+@app.post(
+    "/user_bets",
+    response_model=UserBet,
+    response_model_by_alias=False,
+    status_code=status.HTTP_201_CREATED,
+)
 async def api_create_user_bet(user_bet: UserBet):
-    await create_user_bet(user_bet)
-    return {"message": "User's bet created successfully"}
+    response = await create_user_bet(user_bet)
+    return response
 
 
-@app.get("/user_bets/{user_bet_id}")
+@app.get(
+    "/user_bets/{user_bet_id}",
+    response_model=UserBet,
+    response_model_by_alias=False,
+)
 async def api_get_user_bet(user_bet_id: str):
-    user_bet = await get_user_bet_by_id(user_bet_id)
-    if user_bet:
-        return user_bet
-    raise HTTPException(status_code=404, detail="User's bet not found")
+    response = await get_user_bet_by_id(user_bet_id)
+    return response
 
 
 @app.delete("/user_bets/{user_bet_id}")
 async def api_delete_user_bet(user_bet_id: str):
-    await delete_user_bet(user_bet_id)
-    return {"message": "User's bet deleted successfully"}
+    response = await delete_user_bet(user_bet_id)
+    return response
 
 
-@app.post("/comment/{bet_id}")
+@app.post(
+    "/comments/{bet_id}",
+    response_model=Comment,
+    response_model_by_alias=False,
+    status_code=status.HTTP_201_CREATED,
+)
 async def api_create_comment(comment: Comment):
-    await create_comment(comment)
-    return {"message": "Comment created successfully"}
+    response = await create_comment(comment)
+    return response
 
 
-@app.get("/comment/{bet_id}")
+@app.get(
+    "/comments/{bet_id}",
+    response_model=List[Comment],
+    response_model_by_alias=False,
+)
 async def api_get_comments(bet_id: str):
-    comments = await get_comments_by_bet_id(bet_id)
-    if comments:
-        return {"comments": comments}
-    raise HTTPException(status_code=404, detail="Comments not found")
+    response = await get_comments_by_bet_id(bet_id)
+    return response
 
 
-@app.put("/comments/{comment_id}")
-async def api_update_comment(comment_id: str, new_text: str):
-    await update_comment_text(comment_id, new_text)
-    return {"message": "Comment updated successfully"}
+@app.put(
+    "/comments/{comment_id}",
+    response_model=Comment,
+    response_model_by_alias=False,
+)
+async def api_update_comment_text(comment_id: str, new_text: str):
+    response = await update_comment_text(comment_id, new_text)
+    return response
 
 
 @app.delete("/comments/{comment_id}")
 async def api_delete_comment(comment_id: str):
-    await delete_comment(comment_id)
-    return {"message": "Comment deleted successfully"}
+    response = await delete_comment(comment_id)
+    return response

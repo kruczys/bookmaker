@@ -1,8 +1,7 @@
-import json
 from datetime import datetime
 from random import randint
 from typing import List
-import paho.mqtt.client as mqtt
+
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.openapi.models import Response
@@ -11,7 +10,6 @@ from pymongo import ReturnDocument
 from starlette import status
 
 from models import UserBet, Comment, Bet, User
-
 
 db_client = AsyncIOMotorClient('mongodb://localhost:27017')
 db = db_client.bookmaker
@@ -118,13 +116,18 @@ async def get_bet_by_id(id: str) -> Bet:
     raise HTTPException(status_code=404, detail=f"Bet with id: {id} not found")
 
 
+async def get_all_user_bets(user_id: str) -> List[UserBet]:
+    user_bets = await user_bets_collection.find({"user_id": user_id}).to_list(length=1000)
+    return user_bets
+
+
 async def get_user_bet_by_id(id: str) -> UserBet:
     if (
-            user_bet := await users_collection.find_one({"_id": ObjectId(id)})
+            user_bet := await user_bets_collection.find_one({"_id": ObjectId(id)})
     ) is not None:
         return user_bet
 
-    raise HTTPException(status_code=404, detail=f"User with id: {id} not found")
+    raise HTTPException(status_code=404, detail=f"User bet with id: {id} not found")
 
 
 async def get_comments_by_bet_id(id: str) -> Comment:
@@ -201,6 +204,3 @@ async def delete_comment(id: str):
 
     if delete_result.deleted_count == 1:
         return Response(status_code=status.HTTP_204_NO_CONTENT, description=f"Comment with id: {id} deleted")
-
-
-
