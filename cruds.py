@@ -1,10 +1,10 @@
+import json
 from datetime import datetime
 from random import randint
 from typing import List
-
+import paho.mqtt.client as mqtt
 from bson import ObjectId
 from fastapi import HTTPException
-from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.models import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
@@ -12,8 +12,27 @@ from starlette import status
 
 from models import UserBet, Comment, Bet, User
 
-client = AsyncIOMotorClient('mongodb://localhost:27017')
-db = client.bookmaker
+mqtt_client = mqtt.Client()
+mqtt_client.connect("localhost", 1883)
+mqtt_client.loop_start()
+
+
+def on_chat_message(client, userdata, message):
+    message_data = json.loads(message.payload.decode("utf-8"))
+    print(f"{message_data['username']}: {message_data['message']}")
+
+
+def on_connect(client, userdata, flags, rc):
+    # client.subscribe("bets/created")
+    # client.subscribe("bets/resolved")
+    # client.subscribe("comments/new")
+    client.message_callback_add("chat/all", on_chat_message)
+    # client.subscribe("scoreboard/change")
+
+
+mqtt_client.on_connect = on_connect
+db_client = AsyncIOMotorClient('mongodb://localhost:27017')
+db = db_client.bookmaker
 users_collection = db.get_collection("users")
 bets_collection = db.get_collection("bets")
 user_bets_collection = db.get_collection("user_bets")
@@ -209,7 +228,7 @@ class BetManager:
     async def resolve_bets(self):
         resolved_bets = await get_resolved_bets()
         for bet in resolved_bets:
-            user_bets = await db.user_bets.find({"bet_id": bet['id'], "resolved": False})
+            user_bets = await user_bets_collection.find({"bet_id": bet['id'], "resolved": False})
             for user_bet in user_bets:
                 if bet['result'] == user_bet['option']:
                     await update_user_balance(user_bet['user_id'], user_bet['amount'] * 1.67, "increase")

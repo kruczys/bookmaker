@@ -1,37 +1,16 @@
 import json
 from typing import List
 
-import paho.mqtt.client as mqtt
 from fastapi import FastAPI
 from fastapi import HTTPException
 from starlette import status
 
-from cruds import delete_comment, update_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
-    get_user_bet_by_id, create_user_bet, delete_bet, update_bet, get_bet_by_id, create_bet, get_user_by_id, \
+from cruds import delete_comment, update_comment_text, get_comments_by_bet_id, create_comment, delete_user_bet, \
+    get_user_bet_by_id, create_user_bet, delete_bet, update_bet_title, get_bet_by_id, create_bet, get_user_by_id, \
     update_user_balance, delete_user, create_user, get_all_users
 from models import Comment, UserBet, Bet, User
 
 app = FastAPI()
-
-client = mqtt.Client()
-client.connect("localhost", 1883)
-client.loop_start()
-
-
-def on_chat_message(client, userdata, message):
-    message_data = json.loads(message.payload.decode("utf-8"))
-    print(f"{message_data['username']}: {message_data['message']}")
-
-
-def on_connect(client, userdata, flags, rc):
-    # client.subscribe("bets/created")
-    # client.subscribe("bets/resolved")
-    # client.subscribe("comments/new")
-    client.message_callback_add("chat/all", on_chat_message)
-    # client.subscribe("scoreboard/change")
-
-
-client.on_connect = on_connect
 
 
 @app.get(

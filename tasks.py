@@ -1,10 +1,10 @@
 from celeryapp import celery
-from cruds import BetManager, client
+from cruds import BetManager, mqtt_client
 
 
 @celery.task
 def resolve_bets():
-    bet_manager = BetManager(client)
+    bet_manager = BetManager(mqtt_client)
     bet_manager.resolve_bets()
 
 
