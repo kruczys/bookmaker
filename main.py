@@ -62,7 +62,11 @@ async def api_delete_user(user_id: str):
     return response
 
 
-@app.put("/auth/update_balance/{user_id}/{amount}/{operation}")
+@app.put(
+    "/auth/update_balance/{user_id}/{amount}/{operation}",
+    response_model=User,
+    response_model_by_alias=False,
+)
 async def api_update_user_balance(user_id: str, amount: float, operation: str):
     response = await update_user_balance(user_id, amount, operation)
     return response
