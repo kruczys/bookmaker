@@ -3,15 +3,14 @@ from typing import List
 
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI
-from fastapi import HTTPException
 from starlette import status
 
-from cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
+from server.cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
     get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
     update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title, \
-    get_all_user_bets
-from models import Comment, UserBet, Bet, User
-from mqtt import on_connect
+    get_all_user_bets, get_unresolved_bets, get_resolved_bets
+from server.models import Comment, UserBet, Bet, User
+from server.mqtt import on_connect
 
 app = FastAPI()
 
@@ -71,7 +70,7 @@ async def api_get_user(id: str):
 
 
 @app.post(
-    "/bet",
+    "/bets",
     response_model=Bet,
     response_description=False,
 )
@@ -82,7 +81,27 @@ async def api_create_bet(bet: Bet):
 
 
 @app.get(
-    "/bet/{bet_id}",
+    "/bets/unresolved",
+    response_model=List[Bet],
+    response_model_by_alias=False,
+)
+async def api_get_unresolved_bets():
+    response = await get_unresolved_bets()
+    return response
+
+
+@app.get(
+    "/bets/resolved",
+    response_model=List[Bet],
+    response_model_by_alias=False,
+)
+async def api_get_resolved_bets():
+    response = await get_resolved_bets()
+    return response
+
+
+@app.get(
+    "/bets/{bet_id}",
     response_model=Bet,
     response_model_by_alias=False,
 )
@@ -92,7 +111,7 @@ async def api_get_bet(bet_id: str):
 
 
 @app.put(
-    "/bet/{bet_id}",
+    "/bets/{bet_id}",
     response_model=Bet,
     response_model_by_alias=False,
 )
@@ -101,7 +120,7 @@ async def api_update_bet(bet_id: str, new_title: str):
     return response
 
 
-@app.delete("/bet/{bet_id}")
+@app.delete("/bets/{bet_id}")
 async def api_delete_bet(bet_id: str):
     response = await delete_bet(bet_id)
     return response

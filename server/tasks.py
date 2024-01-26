@@ -1,6 +1,6 @@
-from celeryapp import celery
-from bet_manager import BetManager
-from main import mqtt_client
+from server.celeryapp import celery
+from server.bet_manager import BetManager
+from server.main import mqtt_client
 
 
 @celery.task

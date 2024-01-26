@@ -1,8 +1,5 @@
 import json
 
-import paho.mqtt.client as mqtt
-
-
 
 def on_chat_message(client, userdata, message):
     message_data = json.loads(message.payload.decode("utf-8"))
@@ -16,5 +13,3 @@ def on_connect(client, userdata, flags, rc):
     client.message_callback_add("chat/all", on_chat_message)
     # client.subscribe("scoreboard/change")
 
-
-mqtt_client.on_connect = on_connect

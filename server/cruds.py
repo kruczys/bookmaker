@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 from starlette import status
 
-from models import UserBet, Comment, Bet, User
+from server.models import UserBet, Comment, Bet, User
 
 db_client = AsyncIOMotorClient('mongodb://localhost:27017')
 db = db_client.bookmaker
@@ -64,17 +64,19 @@ async def create_bet(bet: Bet) -> Bet:
 
 async def get_resolved_bets() -> List[Bet]:
     current_time = datetime.now()
-    resolved_bets = bets_collection.find({"resolve_date": {"$lt": current_time}})
+    resolved_bets = await bets_collection.find({"resolve_date": {"$lt": current_time}}).to_list(length=1000)
     return resolved_bets
 
 
 async def get_unresolved_bets() -> List[Bet]:
     current_time = datetime.now()
-    resolved_bets = bets_collection.find({"resolve_date": {"$gt": current_time}})
+    resolved_bets = await bets_collection.find({"resolve_date": {"$gt": current_time}}).to_list(length=1000)
     return resolved_bets
 
 
 async def create_user_bet(user_bet: UserBet):
+    user_bet_dict = user_bet.model_dump(by_alias=True, exclude=["id"])
+    await update_user_balance(user_bet_dict["user_id"], user_bet_dict["amount"], "decrease")
     new_user_bet = await users_collection.insert_one(
         user_bet.model_dump(by_alias=True, exclude=["id"])
     )
