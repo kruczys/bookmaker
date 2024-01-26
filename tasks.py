@@ -1,10 +1,10 @@
 from celeryapp import celery
-from main import BetManager, users, user_bets, bets
+from cruds import BetManager, client
 
 
 @celery.task
 def resolve_bets():
-    bet_manager = BetManager(users=users, user_bets=user_bets, bets=bets)
+    bet_manager = BetManager(client)
     bet_manager.resolve_bets()
 
 

@@ -1,8 +1,15 @@
 import json
-from uuid import uuid4
+from typing import List
+
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI
 from fastapi import HTTPException
+from starlette import status
+
+from cruds import delete_comment, update_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
+    get_user_bet_by_id, create_user_bet, delete_bet, update_bet, get_bet_by_id, create_bet, get_user_by_id, \
+    update_user_balance, delete_user, create_user, get_all_users
+from models import Comment, UserBet, Bet, User
 
 app = FastAPI()
 
@@ -27,189 +34,123 @@ def on_connect(client, userdata, flags, rc):
 client.on_connect = on_connect
 
 
-@app.post("/auth/signup")
-async def create_user(user: User):
-    user_id = str(uuid4())
-    user.balance = 1000
-    if user.username not in usernames:
-        users[user_id] = user
-        usernames.append(user.username)
-        return {"message": "User created successfully"}
-    else:
-        return {"message": "User already exists"}
+@app.get(
+    "/auth/users",
+    response_model_by_alias=False,
+    response_model=List[User]
+)
+async def api_get_all_users():
+    users = await get_all_users()
+    return users
 
 
-@app.delete("/auth/delete/{username}")
-async def delete_user(username: str):
-    if username in usernames:
-        user_id_info = await get_user_id(username)
-        user_id = user_id_info["user_id"]
-        del users[user_id]
-        usernames.remove(username)
-        return {"message": "User deleted successfully"}
-    return HTTPException(status_code=404, detail="User does not exist")
+@app.post(
+    "/auth/signup",
+    response_model=User,
+    response_description="Create user",
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
+async def api_create_user(user: User):
+    response = await create_user(user)
+    return response
 
 
-@app.put("/auth/update_username/{username}/{new_username}")
-async def update_username(username: str, new_username: str):
-    if new_username not in usernames:
-        usernames.remove(username)
-        user_id_info = await get_user_id(username)
-        user_id = user_id_info["user_id"]
-        users[user_id].username = new_username
-        usernames.append(new_username)
-        return {"message": "Username updated successfully"}
-    return {"message": "Username already in database"}
+@app.delete("/auth/delete/{user_id}")
+async def api_delete_user(user_id: str):
+    response = await delete_user(user_id)
+    return response
 
 
-@app.get("/auth/user_id/{username}")
-async def get_user_id(username: str):
-    for user_id, user_data in users.items():
-        if user_data.username == username:
-            return {"user_id": user_id}
-    raise HTTPException(status_code=404, detail="User not found")
+@app.put("/auth/update_balance/{user_id}/{amount}/{operation}")
+async def api_update_user_balance(user_id: str, amount: float, operation: str):
+    response = await update_user_balance(user_id, amount, operation)
+    return response
 
 
-@app.get("/auth/user_balance/{username}")
-async def get_user_balance(username: str):
-    if username in usernames:
-        user_id_info = await get_user_id(username)
-        user_id = user_id_info["user_id"]
-        return {"balance": users[user_id].balance}
-    else:
-        raise HTTPException(status_code=404, detail="User not found")
+@app.get(
+    "/auth/user/{id}",
+    response_description="User details",
+    response_model=User,
+    response_model_by_alias=False,
+)
+async def api_get_user(id: str):
+    response = await get_user_by_id(id)
+    return response
 
 
-@app.get("/bet")
-async def get_bets():
-    query = [bet for bet in bets.values() if not bet.is_resolved()]
-    return {"bets": query}
+@app.post(
+    "/bet",
+    response_model=Bet,
+    response_description=False,
+)
+async def api_create_bet(bet: Bet):
+    response = await create_bet(bet)
+    client.publish("bets/created", json.dumps({"message": f"New bet added: {bet.title}!"}))
+    return response
 
 
-@app.get("/bet/search")
-async def get_bets_by_title(q: str = ""):
-    query = [bet for bet_id, bet in bets.items() if q.lower() in bet.title.lower()]
-    if query:
-        return {"bets": query}
-    return HTTPException(status_code=404, detail="Bets not found")
-
-
-@app.post("/bet")
-async def create_bet(bet: Bet):
-    bet_id = str(uuid4())
-    bets[bet_id] = bet
-    client.publish("bets/created", f"New bet added: {bet.title}!")
-    return {"message": "Bet created successfully"}
-
-
-@app.get("/bet/bet_id/{title}")
-async def get_bet_id(title: str):
-    for bet_id, bet_data in bets.items():
-        if bet_data.title == title:
-            return {"bet_id": bet_id}
+@app.get("/bet/{bet_id}")
+async def api_get_bet(bet_id: str):
+    bet = await get_bet_by_id(bet_id)
+    if bet:
+        return bet
     raise HTTPException(status_code=404, detail="Bet not found")
 
 
-@app.put("/bet/{title}/{creator_username}/{new_title}")
-async def update_bet(title: str, creator_username: str, new_title: str):
-    bet_id_info = await get_bet_id(title)
-    bet_id = bet_id_info["bet_id"]
-    if bet_id and bets[bet_id].creator_username == creator_username:
-        bets[bet_id].title = new_title
-        return {"message": "Bet updated successfully"}
-    return HTTPException(status_code=404, detail="Bet not found or user is not creator")
+@app.put("/bet/{bet_id}")
+async def api_update_bet(bet_id: str, update_data: dict):
+    await update_bet(bet_id, update_data)
+    return {"message": "Bet updated successfully"}
 
 
-@app.delete("/bet/{title}/{creator_username}")
-async def delete_bet(title: str, creator_username: str):
-    bet_id_info = await get_bet_id(title)
-    bet_id = bet_id_info["bet_id"]
-    if bet_id and bets[bet_id].creator_username == creator_username:
-        del bets[bet_id]
-        return {"message": "Bet deleted successfully"}
-    return HTTPException(status_code=404, detail="Bet not found or user is not creator")
-
-
-@app.get("/user_bets/{user_id}")
-async def get_user_bets(user_id: str):
-    if user_id in users:
-        query = [user_bet for user_bet in user_bets if user_bet.user_id == user_id]
-        return {"user_bets": query}
-    return HTTPException(status_code=404, detail="User not found")
-
-
-def is_valid_user_bet(user_bet: UserBet) -> bool:
-    return (
-            user_bet.bet_id in bets
-            and user_bet.user_id in users
-            and user_bet.amount > 0
-            and user_bet.option in [0, 1, 2]
-            and not bets[user_bet.bet_id].is_resolved()
-    )
-
-
-def exists_user_bet(bet_id, user_id) -> bool:
-    for user_bet in user_bets:
-        if bet_id == user_bet.bet_id and user_id == user_bet.user_id:
-            return True
-    return False
+@app.delete("/bet/{bet_id}")
+async def api_delete_bet(bet_id: str):
+    await delete_bet(bet_id)
+    return {"message": "Bet deleted successfully"}
 
 
 @app.post("/user_bets")
-async def create_user_bet(user_bet: UserBet):
-    if is_valid_user_bet(user_bet) and not exists_user_bet(user_bet.bet_id, user_bet.user_id):
-        users[user_bet.user_id].reduce_balance(user_bet.amount)
-        user_bets.append(user_bet)
-        return {"message": "User's bet created successfully"}
-    return HTTPException(status_code=400, detail="Invalid data")
+async def api_create_user_bet(user_bet: UserBet):
+    await create_user_bet(user_bet)
+    return {"message": "User's bet created successfully"}
 
 
-@app.delete("/user_bets/{bet_id}/{user_id}")
-async def delete_user_bet(bet_id: str, user_id: str):
-    if exists_user_bet(bet_id, user_id):
-        ub = next((ub for ub in user_bets if ub.bet_id == bet_id and ub.user_id == user_id), None)
-        user_bets.remove(ub)
-        return {"message": "User's bet deleted successfully"}
-    return HTTPException(status_code=404, detail="User's bet not found")
+@app.get("/user_bets/{user_bet_id}")
+async def api_get_user_bet(user_bet_id: str):
+    user_bet = await get_user_bet_by_id(user_bet_id)
+    if user_bet:
+        return user_bet
+    raise HTTPException(status_code=404, detail="User's bet not found")
+
+
+@app.delete("/user_bets/{user_bet_id}")
+async def api_delete_user_bet(user_bet_id: str):
+    await delete_user_bet(user_bet_id)
+    return {"message": "User's bet deleted successfully"}
 
 
 @app.post("/comment/{bet_id}")
-async def create_comment(comment: Comment):
-    if comment.creator_username in usernames:
-        comments.append(comment)
-        return {"message": "Comment created successfully"}
-    return HTTPException(status_code=404, detail="User not found")
+async def api_create_comment(comment: Comment):
+    await create_comment(comment)
+    return {"message": "Comment created successfully"}
 
 
 @app.get("/comment/{bet_id}")
-async def get_comments(bet_id: str):
-    query = [comment for comment in comments if comment.bet_id == bet_id]
-    return {"comments": query}
+async def api_get_comments(bet_id: str):
+    comments = await get_comments_by_bet_id(bet_id)
+    if comments:
+        return {"comments": comments}
+    raise HTTPException(status_code=404, detail="Comments not found")
 
 
-@app.get("comment/search")
-async def get_comments_by_username(username_substring: str = ""):
-    query = [comment for comment in comments if username_substring.lower() in comment.creator_username.lower()]
-    if query:
-        return {"comments": query}
-    return HTTPException(status_code=404, detail="User not found")
+@app.put("/comments/{comment_id}")
+async def api_update_comment(comment_id: str, new_text: str):
+    await update_comment(comment_id, new_text)
+    return {"message": "Comment updated successfully"}
 
 
-@app.put("comments/{bet_id}/{username}")
-async def update_comment(bet_id: int, username: str, new_text: str):
-    if bet_id in bets and username in usernames:
-        for com in comments:
-            if com.bet_id == bet_id and com.username == username:
-                com.text = new_text
-                return {"message": "Comment updated successfully"}
-    return HTTPException(status_code=404, detail="No bet or username found")
-
-
-@app.delete("comments/{bet_id}/{username}")
-async def delete_comment(bet_id: int, username: str):
-    if bet_id in bets and username in usernames:
-        for comment in comments:
-            if comment.bet_id == bet_id and comment.creator_username == username:
-                comments.remove(comment)
-                return {"message": "Comment deleted successfully"}
-    return HTTPException(status_code=404, detail="No bet or username found")
+@app.delete("/comments/{comment_id}")
+async def api_delete_comment(comment_id: str):
+    await delete_comment(comment_id)
+    return {"message": "Comment deleted successfully"}
