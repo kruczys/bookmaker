@@ -25,6 +25,10 @@ async def get_all_users() -> List[User]:
 
 
 async def create_user(user: User) -> User:
+    user_dict = user.model_dump(by_alias=True, exclude=["id"])
+    existing_user = await users_collection.find_one({"username": user_dict["username"]})
+    if existing_user is not None:
+        raise HTTPException(status_code=401, detail="User already exists")
     new_user = await users_collection.insert_one(
         user.model_dump(by_alias=True, exclude=["id"])
     )
@@ -32,6 +36,31 @@ async def create_user(user: User) -> User:
         {"_id": new_user.inserted_id}
     )
     return created_user
+
+
+async def login_user(username: str, password: str) -> User:
+    user = await users_collection.find_one({"username": username, "password": password})
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    await users_collection.update_one(
+        {"username": user["username"]},
+        {"$set": {"logged_in": True}},
+
+    )
+    user = await users_collection.find_one({"username": username, "password": password})
+    return user
+
+
+async def logout_user(username: str) -> User:
+    user = await users_collection.find_one({"username": username})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    await users_collection.update_one(
+        {"username": user["username"]},
+        {"$set": {"logged_in": False}}
+    )
+    user = await users_collection.find_one({"username": username})
+    return user
 
 
 async def update_user_balance(user_id: str, amount: float, operation: str) -> User:
@@ -77,10 +106,10 @@ async def get_unresolved_bets() -> List[Bet]:
 async def create_user_bet(user_bet: UserBet):
     user_bet_dict = user_bet.model_dump(by_alias=True, exclude=["id"])
     await update_user_balance(user_bet_dict["user_id"], user_bet_dict["amount"], "decrease")
-    new_user_bet = await users_collection.insert_one(
+    new_user_bet = await user_bets_collection.insert_one(
         user_bet.model_dump(by_alias=True, exclude=["id"])
     )
-    created_user_bet = await users_collection.find_one(
+    created_user_bet = await user_bets_collection.find_one(
         {"_id": new_user_bet.inserted_id}
     )
     return created_user_bet
@@ -132,13 +161,9 @@ async def get_user_bet_by_id(id: str) -> UserBet:
     raise HTTPException(status_code=404, detail=f"User bet with id: {id} not found")
 
 
-async def get_comments_by_bet_id(id: str) -> Comment:
-    if (
-            comment := await comments_collection.find_one({"bet_id": ObjectId(id)})
-    ) is not None:
-        return comment
-
-    raise HTTPException(status_code=404, detail=f"Comment with bet id: {id} not found")
+async def get_comments_by_bet_id(id: str) -> List[Comment]:
+    comments = await comments_collection.find({"bet_id": str(id)}).to_list(length=1000)
+    return comments
 
 
 async def get_comment_by_id(id: str) -> Comment:

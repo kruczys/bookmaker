@@ -10,8 +10,8 @@ class BetManager:
         for bet in resolved_bets:
             user_bets = await user_bets_collection.find({"bet_id": bet['id'], "resolved": False})
             bet_dict = bet.model_dump(by_alias=True, exclude=["id"])
-            user_bet_dict = user_bets.model_dump(by_alias=True, exclude=["id"])
             for user_bet in user_bets:
+                user_bet_dict = user_bet.model_dump(by_alias=True, exclude=["id"])
                 if bet_dict['result'] == user_bet_dict['option']:
                     await update_user_balance(user_bet_dict['user_id'], user_bet_dict['amount'] * 1.67, "increase")
                 await resolve_user_bet(user_bet_dict['id'])

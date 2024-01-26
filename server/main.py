@@ -8,7 +8,7 @@ from starlette import status
 from server.cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
     get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
     update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title, \
-    get_all_user_bets, get_unresolved_bets, get_resolved_bets
+    get_all_user_bets, get_unresolved_bets, get_resolved_bets, login_user, logout_user
 from server.models import Comment, UserBet, Bet, User
 from server.mqtt import on_connect
 
@@ -39,6 +39,26 @@ async def api_get_all_users():
 )
 async def api_create_user(user: User):
     response = await create_user(user)
+    return response
+
+
+@app.post(
+    "/auth/login",
+    response_model=User,
+    response_model_by_alias=False,
+)
+async def api_login_user(username: str, password: str):
+    response = await login_user(username, password)
+    return response
+
+
+@app.post(
+    "/auth/logout",
+    response_model=User,
+    response_model_by_alias=False,
+)
+async def api_logout_user(username: str):
+    response = await logout_user(username)
     return response
 
 
