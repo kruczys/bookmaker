@@ -1,16 +1,23 @@
 import json
 from typing import List
 
+import paho.mqtt.client as mqtt
 from fastapi import FastAPI
 from fastapi import HTTPException
 from starlette import status
 
-from cruds import delete_comment, update_comment_text, get_comments_by_bet_id, create_comment, delete_user_bet, \
-    get_user_bet_by_id, create_user_bet, delete_bet, update_bet_title, get_bet_by_id, create_bet, get_user_by_id, \
-    update_user_balance, delete_user, create_user, get_all_users
+from cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
+    get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
+    update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title
 from models import Comment, UserBet, Bet, User
+from mqtt import on_connect
 
 app = FastAPI()
+
+mqtt_client = mqtt.Client()
+mqtt_client.connect("localhost", 1883)
+mqtt_client.loop_start()
+mqtt_client.on_connect = on_connect
 
 
 @app.get(
@@ -69,7 +76,7 @@ async def api_get_user(id: str):
 )
 async def api_create_bet(bet: Bet):
     response = await create_bet(bet)
-    client.publish("bets/created", json.dumps({"message": f"New bet added: {bet.title}!"}))
+    mqtt_client.publish("bets/created", json.dumps({"message": f"New bet added: {bet.title}!"}))
     return response
 
 
@@ -83,7 +90,7 @@ async def api_get_bet(bet_id: str):
 
 @app.put("/bet/{bet_id}")
 async def api_update_bet(bet_id: str, update_data: dict):
-    await update_bet(bet_id, update_data)
+    await update_bet_title(bet_id, update_data)
     return {"message": "Bet updated successfully"}
 
 
@@ -129,7 +136,7 @@ async def api_get_comments(bet_id: str):
 
 @app.put("/comments/{comment_id}")
 async def api_update_comment(comment_id: str, new_text: str):
-    await update_comment(comment_id, new_text)
+    await update_comment_text(comment_id, new_text)
     return {"message": "Comment updated successfully"}
 
 

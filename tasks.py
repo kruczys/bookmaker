@@ -1,5 +1,6 @@
 from celeryapp import celery
-from cruds import BetManager, mqtt_client
+from bet_manager import BetManager
+from main import mqtt_client
 
 
 @celery.task

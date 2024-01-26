@@ -12,25 +12,7 @@ from starlette import status
 
 from models import UserBet, Comment, Bet, User
 
-mqtt_client = mqtt.Client()
-mqtt_client.connect("localhost", 1883)
-mqtt_client.loop_start()
 
-
-def on_chat_message(client, userdata, message):
-    message_data = json.loads(message.payload.decode("utf-8"))
-    print(f"{message_data['username']}: {message_data['message']}")
-
-
-def on_connect(client, userdata, flags, rc):
-    # client.subscribe("bets/created")
-    # client.subscribe("bets/resolved")
-    # client.subscribe("comments/new")
-    client.message_callback_add("chat/all", on_chat_message)
-    # client.subscribe("scoreboard/change")
-
-
-mqtt_client.on_connect = on_connect
 db_client = AsyncIOMotorClient('mongodb://localhost:27017')
 db = db_client.bookmaker
 users_collection = db.get_collection("users")
@@ -221,16 +203,4 @@ async def delete_comment(id: str):
         return Response(status_code=status.HTTP_204_NO_CONTENT, description=f"Comment with id: {id} deleted")
 
 
-class BetManager:
-    def __init__(self, client):
-        self.client = client
 
-    async def resolve_bets(self):
-        resolved_bets = await get_resolved_bets()
-        for bet in resolved_bets:
-            user_bets = await user_bets_collection.find({"bet_id": bet['id'], "resolved": False})
-            for user_bet in user_bets:
-                if bet['result'] == user_bet['option']:
-                    await update_user_balance(user_bet['user_id'], user_bet['amount'] * 1.67, "increase")
-                await resolve_user_bet(user_bet['id'])
-                self.client.publish("bets/resolved", f"{bet['title']} just got resolved")
