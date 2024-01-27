@@ -40,8 +40,35 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+    const updateUserPassword = async (oldPassword, newPassword) => {
+        try {
+            const response = await axios.post(`/auth/password/reset/?user_id=${user.id}&old_password=${oldPassword}&new_password=${newPassword}`);
+            setUser({
+                ...user, // Preserve all properties except for 'password'
+                password: newPassword
+            });
+            Cookies.set('user', JSON.stringify(user), { expires: 1 }); // Update the cookie to reflect changes in user state
+        } catch (error) {
+            console.error('Password update failed:', error);
+        }
+    };
+
+    const updateUserBalance = async (balanceAmount, balanceOperation) => {
+        try {
+            const response = await axios.put(`/auth/update_balance/${user.id}/${balanceAmount}/${balanceOperation}`);
+            const updatedBalance = balanceOperation === 'increase' ? user.balance + balanceAmount : user.balance - balanceAmount;
+            setUser({
+                ...user, // Preserve all properties except for 'balance'
+                balance: updatedBalance
+            });
+            Cookies.set('user', JSON.stringify(user), { expires: 1 }); // Update the cookie to reflect changes in user state
+        } catch (error) {
+            console.error('Balance update failed:', error);
+        }
+    };
+
     return (
-        <UserContext.Provider value={{ user, login, logout, signup }}>
+        <UserContext.Provider value={{ user, login, logout, signup, updateUserPassword, updateUserBalance }}>
             {children}
         </UserContext.Provider>
     );

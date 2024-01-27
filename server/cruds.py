@@ -183,10 +183,12 @@ async def update_password(user_id: str, old_password: str, new_password: str) ->
     if old_password != user["password"]:
         raise HTTPException(status_code=401, detail="Incorrect password")
 
-    updated_user = await users_collection.update_one(
+    await users_collection.update_one(
         {"_id": ObjectId(user_id)},
         {"$set": {"password": new_password}}
     )
+
+    updated_user = await users_collection.find_one({"_id": ObjectId(user_id)})
 
     return updated_user
 
