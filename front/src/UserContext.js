@@ -36,6 +36,7 @@ export const UserProvider = ({ children }) => {
             if (error.response && error.response.status === 401) {
                 alert("User already exists")
             }
+            console.error(error)
         }
     };
 

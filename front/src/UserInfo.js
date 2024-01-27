@@ -8,12 +8,10 @@ const UserInfo = () => {
         <div>
             {user ? (
                 <div>
-                    <p>Username: {user.username}, Balance: {user.balance}</p>
+                    <p>Twoj nick: {user.username}, Portfel: {user.balance}</p>
                     <button onClick={() => logout(user.username)}>Logout</button>
                 </div>
-            ) : (
-                <p>No user logged in</p>
-            )}
+            ) : null}
         </div>
     );
 };

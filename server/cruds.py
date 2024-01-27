@@ -120,6 +120,7 @@ async def resolve_user_bet(user_bet_id: str):
 
 
 async def create_comment(comment: Comment):
+    comment.create_date = datetime.now().isoformat()
     new_comment = await comments_collection.insert_one(
         comment.model_dump(by_alias=True, exclude=["id"])
     )
