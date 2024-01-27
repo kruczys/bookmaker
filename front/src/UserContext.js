@@ -67,8 +67,28 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+    const updateBetTitle = async (betId, newTitle) => {
+        try {
+            const response = await axios.put(`/bets/${betId}/?new_title=${newTitle}`);
+            return response.data;
+        } catch (error) {
+            console.error('Bet title update failed:', error);
+        }
+    };
+
+    const updateComment = async (commentId, newText) => {
+        try {
+            const response = await axios.put(`/comments/${commentId}`, newText);
+            return response.data;
+        } catch (error) {
+            console.error('Comment update failed:', error);
+        }
+    };
+
     return (
-        <UserContext.Provider value={{ user, login, logout, signup, updateUserPassword, updateUserBalance }}>
+        <UserContext.Provider value={{
+            user, login, logout, signup, updateUserPassword, updateUserBalance, updateBetTitle, updateComment  // Add here
+        }}>
             {children}
         </UserContext.Provider>
     );

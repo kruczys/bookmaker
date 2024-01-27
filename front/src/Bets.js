@@ -1,16 +1,20 @@
 import React, {useContext, useEffect, useState} from 'react';
 import axios from 'axios';
-import SelectedBet from './SelectedBet';
 import {UserContext} from "./UserContext";
 import CreateBet from "./CreateBet";
+import SelectedBet from './SelectedBet';
 
 function Bets() {
     const [openBets, setOpenBets] = useState([]);
     const [resolvedBets, setResolvedBets] = useState([]);
     const [selectedBet, setSelectedBet] = useState(null);
     const [showMore, setShowMore] = useState(false);
+    const [editingBetId, setEditingBetId] = useState(null);
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [newBetTitle, setNewBetTitle] = useState("");
+    const [newCommentText, setNewCommentText] = useState("");
 
-    const {user} = useContext(UserContext);
+    const {user, updateBetTitle, updateComment} = useContext(UserContext);
 
     useEffect(() => {
         axios.get('http://localhost:8000/bets/unresolved')
@@ -20,7 +24,6 @@ function Bets() {
             .catch(error => {
                 console.log(error);
             });
-
         axios.get('http://localhost:8000/bets/resolved')
             .then(response => {
                 setResolvedBets(response.data);
@@ -55,6 +58,28 @@ function Bets() {
         setOpenBets([...openBets, newBet]);
     }
 
+    const handleBetTitleSubmit = () => {
+        updateBetTitle(editingBetId, newBetTitle)
+            .then(updatedBet => {
+                setOpenBets(openBets.map(b => b.id === updatedBet.id ? updatedBet : b));
+                setEditingBetId(null);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    }
+
+    const handleCommentSubmit = () => {
+        updateComment(editingCommentId, newCommentText)
+            .then(updatedComment => {
+                setSelectedBet({...selectedBet, comments: selectedBet.comments.map(c => c.id === updatedComment.id ? updatedComment : c)});
+                setEditingCommentId(null);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    }
+
     return (
         <div>
             {!showMore && (
@@ -70,10 +95,26 @@ function Bets() {
                             const resolveDate = new Date(bet.resolve_date).toLocaleString(undefined, options);
                             return (
                                 <li key={bet.id}>
-                                    {bet.title} - {resolveDate}
-                                    {user && !showMore ? (
-                                        <button onClick={() => handleBetSelection(bet)}>Szczegóły</button>
-                                    ) : null}
+                                    {editingBetId === bet.id ? (
+                                        <>
+                                            <input
+                                                type="text"
+                                                value={newBetTitle}
+                                                onChange={e => setNewBetTitle(e.target.value)}
+                                            />
+                                            <button onClick={handleBetTitleSubmit}>Submit</button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {bet.title} - {resolveDate}
+                                            {user && bet.creator_username === user.username && !showMore ? (
+                                                <button onClick={() => setEditingBetId(bet.id)}>Edit</button>
+                                            ) : null}
+                                            {user && !showMore ? (
+                                                <button onClick={() => handleBetSelection(bet)}>Szczegóły</button>
+                                            ) : null}
+                                        </>
+                                    )}
                                 </li>
                             );
                         })}
