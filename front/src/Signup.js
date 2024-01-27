@@ -24,36 +24,36 @@ const Signup = () => {
             {!user ? (
                 <form onSubmit={handleSubmit}>
                     <div>
-                        <label>Username:</label>
+                        <label>Wpisz swoj login:</label>
                         <input
                             type="text"
-                            placeholder="Enter username"
+                            placeholder="login"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
                         />
                     </div>
                     <div>
-                        <label>Password:</label>
+                        <label>Wpisz haslo:</label>
                         <input
                             type="password"
-                            placeholder="Enter password"
+                            placeholder="haslo"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
                     </div>
                     <div>
-                        <label>Confirm Password:</label>
+                        <label>Potwierdz haslo:</label>
                         <input
                             type="password"
-                            placeholder="Confirm password"
+                            placeholder="haslo"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
                         />
                     </div>
-                    <button type="submit">Sign Up</button>
+                    <button type="submit">Zarejestruj</button>
                 </form>
             ) : null}
 

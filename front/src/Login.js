@@ -17,17 +17,17 @@ const Login = () => {
         <form onSubmit={handleSubmit}>
             <input
                 type="text"
-                placeholder="Username"
+                placeholder="Login"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
             />
             <input
                 type="password"
-                placeholder="Password"
+                placeholder="Haslo"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
             />
-            <button type="submit">Login</button>
+            <button type="submit">Zaloguj</button>
         </form>
     );
 };

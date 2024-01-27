@@ -1,9 +1,9 @@
-import React, { useContext, useState } from 'react';
+import React, {useContext, useState} from 'react';
 import axios from 'axios';
 import {UserContext} from "./UserContext";
 
-const SelectedBet = ({ bet, onBetUpdated }) => {
-    const { user } = useContext(UserContext); // Assuming UserContext provides the user id
+const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
+    const {user} = useContext(UserContext); // Assuming UserContext provides the user id
     const [amount, setAmount] = useState(0);
     const [option, setOption] = useState('');
     const [commentText, setCommentText] = useState('');
@@ -47,39 +47,51 @@ const SelectedBet = ({ bet, onBetUpdated }) => {
                 console.log(error);
             });
     }
+    if (user) {
+        return (
+            <div>
+                <button onClick={onHideMore}>Schowaj szczegóły</button>
+                <h3>Obstaw {bet.title}: </h3>
+                <form onSubmit={handleUserBet}>
+                    <label>
+                        Ilosc:
+                        <input type="number" min="1" max={user.balance} value={amount}
+                               onChange={(e) => setAmount(parseFloat(e.target.value))}
+                               required/>
+                    </label>
+                    <label>
+                        Zaklad:
+                        <select value={option} onChange={(e) => setOption(parseInt(e.target.value))} required>
+                            <option value="0">Zwyciestwo lewej strony</option>
+                            <option value="1">Remis</option>
+                            <option value="2">Zwyciestwo prawej strony</option>
+                        </select>
+                    </label>
+                    <input type="submit" value="OBSTAW!"/>
+                </form>
 
-    return (
-        <div>
-            <form onSubmit={handleUserBet}>
-                <label>
-                    Amount:
-                    <input type="number" value={amount} onChange={(e) => setAmount(parseFloat(e.target.value))} required />
-                </label>
-                <label>
-                    Option:
-                    <input type="number" value={option} onChange={(e) => setOption(parseInt(e.target.value))} required />
-                </label>
-                <input type="submit" value="Add UserBet" />
-            </form>
-
-            {bet.comments && (<div>
-                    <h4>Comments for {bet.title}:</h4>
-                    <ul>
-                        {bet.comments.map((comment, index) => (
-                            <li key={index}>{comment.text} - by {comment.creator_username} {comment.create_date}</li>
-                        ))}
+                {bet.comments && (<div>
+                        <h4>Sekcja komentarzy</h4>
                         <form onSubmit={handleComment}>
                             <label>
-                                New Comment:
-                                <input type="text" value={commentText} onChange={(e) => setCommentText(e.target.value)} required />
+                                Dodaj komentarz:
+                                <input type="text" value={commentText} onChange={(e) => setCommentText(e.target.value)}
+                                       required/>
                             </label>
-                            <input type="submit" value="Post Comment" />
+                            <input type="submit" value="Post Comment"/>
                         </form>
-                    </ul>
-                </div>
-            )}
-        </div>
-    )
+                        {bet.comments.map((comment) => (
+                            <>
+                                <h4>{comment.creator_username}</h4>
+                                <p>{comment.text}</p>
+                            </>
+                        ))}
+
+                    </div>
+                )}
+            </div>
+        )
+    } else {return null;}
 }
 
 export default SelectedBet;

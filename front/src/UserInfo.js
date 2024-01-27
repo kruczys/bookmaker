@@ -9,7 +9,7 @@ const UserInfo = () => {
             {user ? (
                 <div>
                     <p>Twoj nick: {user.username}, Portfel: {user.balance}</p>
-                    <button onClick={() => logout(user.username)}>Logout</button>
+                    <button onClick={() => logout(user.username)}>Wyloguj</button>
                 </div>
             ) : null}
         </div>

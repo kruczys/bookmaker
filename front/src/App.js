@@ -12,7 +12,6 @@ function App() {
           <Login />
           <Signup />
           <UserInfo/>
-          <CreateBet/>
           <Bets/>
       </UserProvider>
   );

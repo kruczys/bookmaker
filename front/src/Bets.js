@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import SelectedBet from './SelectedBet';
+import {UserContext} from "./UserContext";
+import CreateBet from "./CreateBet";
 
 function Bets() {
     const [bets, setBets] = useState([]);
-    const [selectedBet, setSelectedBet] = useState({comments: []});
+    const [selectedBet, setSelectedBet] = useState(null);
+    const [showMore, setShowMore] = useState(false);
+    const {user} = useContext(UserContext)
 
     useEffect(() => {
         axios.get('http://localhost:8000/bets/unresolved')
@@ -18,6 +22,7 @@ function Bets() {
 
     const handleBetSelection = (bet) => {
         setSelectedBet({...bet, comments: []});
+        setShowMore(true);
 
         axios.get(`http://localhost:8000/comments/${bet.id}`)
             .then(response => {
@@ -28,8 +33,22 @@ function Bets() {
             });
     }
 
+    const handleUpdatedBet = (updatedBet) => {
+        setSelectedBet(updatedBet);
+        setShowMore(true);
+    }
+
+    const hideMore = () => {
+        setShowMore(false);
+    }
+
+    const handleNewBet = (newBet) => {
+        setBets([...bets, newBet]);
+    }
+
     return (
         <div>
+            <CreateBet onNewBet={handleNewBet}/>
             <h3>Otwarte Zaklady</h3>
             <ul>
                 {bets.map(bet => {
@@ -39,12 +58,14 @@ function Bets() {
                     return (
                         <li key={bet.id}>
                             {bet.title} - {resolveDate}
-                            <button onClick={() => handleBetSelection(bet)}>More</button>
+                            {user && !showMore? (
+                                <button onClick={() => handleBetSelection(bet)}>Szczegóły</button>
+                            ) : null}
                         </li>
                     );
                 })}
             </ul>
-            {selectedBet && <SelectedBet bet={selectedBet} onBetUpdated={setSelectedBet} />}
+            {showMore && selectedBet && <SelectedBet bet={selectedBet} onBetUpdated={handleUpdatedBet} onHideMore={hideMore} />}
         </div>
     )
 }
