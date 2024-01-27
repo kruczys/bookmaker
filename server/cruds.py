@@ -176,6 +176,21 @@ async def get_comment_by_id(id: str) -> Comment:
     raise HTTPException(status_code=404, detail=f"Comment with id: {id} not found")
 
 
+async def update_password(user_id: str, old_password: str, new_password: str) -> User:
+    user = await users_collection.find_one({"_id": ObjectId(user_id)})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if old_password != user["password"]:
+        raise HTTPException(status_code=401, detail="Incorrect password")
+
+    updated_user = await users_collection.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"password": new_password}}
+    )
+
+    return updated_user
+
+
 async def update_bet_title(bet_id: str, new_title: str) -> Bet:
     bet = await get_bet_by_id(bet_id)
     if bet is not None:

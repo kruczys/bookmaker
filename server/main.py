@@ -9,7 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from server.cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
     get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
     update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title, \
-    get_all_user_bets, get_unresolved_bets, get_resolved_bets, login_user, logout_user
+    get_all_user_bets, get_unresolved_bets, get_resolved_bets, login_user, logout_user, update_password
 from server.models import Comment, UserBet, Bet, User
 from server.mqtt import on_connect
 
@@ -72,6 +72,12 @@ async def api_login_user(username: str, password: str):
 )
 async def api_logout_user(username: str):
     response = await logout_user(username)
+    return response
+
+
+@app.post("/auth/password/reset")
+async def api_reset_password(user_id: str, old_password: str, new_password: str):
+    response = await update_password(user_id, old_password, new_password)
     return response
 
 
