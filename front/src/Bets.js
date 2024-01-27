@@ -1,19 +1,29 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import axios from 'axios';
 import SelectedBet from './SelectedBet';
 import {UserContext} from "./UserContext";
 import CreateBet from "./CreateBet";
 
 function Bets() {
-    const [bets, setBets] = useState([]);
+    const [openBets, setOpenBets] = useState([]);
+    const [resolvedBets, setResolvedBets] = useState([]);
     const [selectedBet, setSelectedBet] = useState(null);
     const [showMore, setShowMore] = useState(false);
-    const {user} = useContext(UserContext)
+
+    const {user} = useContext(UserContext);
 
     useEffect(() => {
         axios.get('http://localhost:8000/bets/unresolved')
             .then(response => {
-                setBets(response.data);
+                setOpenBets(response.data);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+
+        axios.get('http://localhost:8000/bets/resolved')
+            .then(response => {
+                setResolvedBets(response.data);
             })
             .catch(error => {
                 console.log(error);
@@ -23,7 +33,6 @@ function Bets() {
     const handleBetSelection = (bet) => {
         setSelectedBet({...bet, comments: []});
         setShowMore(true);
-
         axios.get(`http://localhost:8000/comments/${bet.id}`)
             .then(response => {
                 setSelectedBet({...bet, comments: response.data});
@@ -43,29 +52,50 @@ function Bets() {
     }
 
     const handleNewBet = (newBet) => {
-        setBets([...bets, newBet]);
+        setOpenBets([...openBets, newBet]);
     }
 
     return (
         <div>
-            <CreateBet onNewBet={handleNewBet}/>
-            <h3>Otwarte Zaklady</h3>
-            <ul>
-                {bets.map(bet => {
-                    const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit',
-                        minute: '2-digit' };
-                    const resolveDate = new Date(bet.resolve_date).toLocaleString(undefined, options);
-                    return (
-                        <li key={bet.id}>
-                            {bet.title} - {resolveDate}
-                            {user && !showMore? (
-                                <button onClick={() => handleBetSelection(bet)}>Szczegóły</button>
-                            ) : null}
-                        </li>
-                    );
-                })}
-            </ul>
-            {showMore && selectedBet && <SelectedBet bet={selectedBet} onBetUpdated={handleUpdatedBet} onHideMore={hideMore} />}
+            {!showMore && (
+                <>
+                    <CreateBet onNewBet={handleNewBet}/>
+                    <h3>Otwarte Zaklady</h3>
+                    <ul>
+                        {openBets.map(bet => {
+                            const options = {
+                                year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit',
+                                minute: '2-digit'
+                            };
+                            const resolveDate = new Date(bet.resolve_date).toLocaleString(undefined, options);
+                            return (
+                                <li key={bet.id}>
+                                    {bet.title} - {resolveDate}
+                                    {user && !showMore ? (
+                                        <button onClick={() => handleBetSelection(bet)}>Szczegóły</button>
+                                    ) : null}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </>
+            )}
+            {showMore && selectedBet &&
+                <SelectedBet bet={selectedBet} onBetUpdated={handleUpdatedBet} onHideMore={hideMore}/>}
+            {!showMore && (
+                <div>
+                    <h3>Zamkniete zaklady</h3>
+                    <ul>
+                        {resolvedBets.map(bet => {
+                            return (
+                                <li key={bet.id}>
+                                    {bet.title} - {bet.result === 0 ? "Zwyciestwo lewej strony" : bet.result === 1 ? "Remis" : "Zwyciestwo prawej strony"}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            )}
         </div>
     )
 }

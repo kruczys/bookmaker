@@ -5,18 +5,18 @@ import {UserContext} from "./UserContext";
 const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
     const {user} = useContext(UserContext); // Assuming UserContext provides the user id
     const [amount, setAmount] = useState(0);
-    const [option, setOption] = useState('');
+    const [option, setOption] = useState(0);
     const [commentText, setCommentText] = useState('');
 
     const handleUserBet = (e) => {
         e.preventDefault();
 
         const userBet = {
-            user_id: user.id,
-            bet_id: bet.id,
             amount: amount,
+            bet_id: bet.id,
             option: option,
             resolved: false,
+            user_id: user.id,
         };
 
         axios.post(`http://localhost:8000/user_bets`, userBet)
@@ -50,8 +50,9 @@ const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
     if (user) {
         return (
             <div>
-                <button onClick={onHideMore}>Schowaj szczegóły</button>
-                <h3>Obstaw {bet.title}: </h3>
+                <button onClick={onHideMore}>Powrót</button>
+                <h1>{bet.title} </h1>
+                <h3>Obstaw</h3>
                 <form onSubmit={handleUserBet}>
                     <label>
                         Ilosc:
@@ -62,16 +63,16 @@ const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
                     <label>
                         Zaklad:
                         <select value={option} onChange={(e) => setOption(parseInt(e.target.value))} required>
-                            <option value="0">Zwyciestwo lewej strony</option>
+                            <option value="0">Zwycięstwo lewej strony</option>
                             <option value="1">Remis</option>
-                            <option value="2">Zwyciestwo prawej strony</option>
+                            <option value="2">Zwycięstwo prawej strony</option>
                         </select>
                     </label>
                     <input type="submit" value="OBSTAW!"/>
                 </form>
 
                 {bet.comments && (<div>
-                        <h4>Sekcja komentarzy</h4>
+                        <h3>Sekcja komentarzy</h3>
                         <form onSubmit={handleComment}>
                             <label>
                                 Dodaj komentarz:
