@@ -4,6 +4,7 @@ from typing import List
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI
 from starlette import status
+from starlette.middleware.cors import CORSMiddleware
 
 from server.cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
     get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
@@ -18,6 +19,18 @@ mqtt_client = mqtt.Client()
 mqtt_client.connect("localhost", 1883)
 mqtt_client.loop_start()
 mqtt_client.on_connect = on_connect
+
+origins = [
+    "http://localhost:3000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get(
