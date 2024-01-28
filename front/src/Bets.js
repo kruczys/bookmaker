@@ -72,7 +72,7 @@ function Bets() {
 
     return (
         <div>
-            <LoggedInUsers/>
+            {/*<LoggedInUsers/>*/}
             {!showMore && (
                 <>
                     <CreateBet onNewBet={handleNewBet}/>

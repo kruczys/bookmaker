@@ -35,8 +35,8 @@ app.add_middleware(
 )
 
 
-@app.websocket("/ws/logged/{user_id}")
-async def websocket_logged(websocket: WebSocket, user_id: str):
+@app.websocket("/ws/logged")
+async def websocket_logged(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
@@ -46,8 +46,6 @@ async def websocket_logged(websocket: WebSocket, user_id: str):
                 await websocket.send_json(count)
     except WebSocketDisconnect:
         pass
-    finally:
-        connected_clients.pop(user_id, None)
 
 
 @app.websocket("/ws/balance/{user_id}")
