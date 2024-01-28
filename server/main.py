@@ -196,9 +196,9 @@ async def api_update_bet(bet_id: str, new_title: str):
     return response
 
 
-@app.delete("/bets/{bet_id}")
-async def api_delete_bet(bet_id: str):
-    response = await delete_bet(bet_id)
+@app.delete("/bets/{bet_id}/{creator_username}")
+async def api_delete_bet(bet_id: str, creator_username: str):
+    response = await delete_bet(bet_id, creator_username)
     return response
 
 

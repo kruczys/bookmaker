@@ -3,9 +3,10 @@ import axios from 'axios';
 import {UserContext} from "./UserContext";
 import CreateBet from "./CreateBet";
 import SelectedBet from './SelectedBet';
-import LoggedInUsers from "./LoggedInUsers";
+
 
 function Bets() {
+    const [bets, setBets] = useState([]);
     const [openBets, setOpenBets] = useState([]);
     const [resolvedBets, setResolvedBets] = useState([]);
     const [selectedBet, setSelectedBet] = useState(null);
@@ -46,6 +47,17 @@ function Bets() {
             });
     }
 
+    const handleDelete = (betId) => {
+        axios.delete(`http://localhost:8000/bets/${betId}/${user.username}`)
+            .then(() => {
+                setBets(bets.filter(bet => bet.id !== betId));
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    };
+
+
     const handleUpdatedBet = (updatedBet) => {
         setSelectedBet(updatedBet);
         setShowMore(true);
@@ -72,7 +84,6 @@ function Bets() {
 
     return (
         <div>
-            {/*<LoggedInUsers/>*/}
             {!showMore && (
                 <>
                     <CreateBet onNewBet={handleNewBet}/>
@@ -106,6 +117,9 @@ function Bets() {
                                             ) : null}
                                         </>
                                     )}
+                                    {user && bet.creator_username === user.username && !showMore &&
+                                        <button onClick={() => handleDelete(bet.id)}>Delete</button>
+                                    }
                                 </li>
                             );
                         })}

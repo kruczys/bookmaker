@@ -2,6 +2,7 @@ from datetime import datetime
 from random import randint
 from typing import List, Dict
 
+import paho.mqtt.client as mqtt
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.openapi.models import Response
@@ -20,9 +21,14 @@ user_bets_collection = db.get_collection("user_bets")
 comments_collection = db.get_collection("comments")
 connected_clients: Dict[str, WebSocket] = {}
 
+mqtt_client = mqtt.Client()
+mqtt_client.connect("localhost", 1883)
+
 
 async def get_all_users() -> List[User]:
     users = await users_collection.find().to_list(length=1000)
+    message = f"Got all users: {users}"
+    mqtt_client.publish("logs", message)
     return users
 
 
@@ -37,6 +43,8 @@ async def create_user(user: User) -> User:
     created_user = await users_collection.find_one(
         {"_id": new_user.inserted_id}
     )
+    message = f"Created new user: {user}"
+    mqtt_client.publish("logs", message)
     return created_user
 
 
@@ -57,11 +65,15 @@ async def login_user(username: str, password: str) -> User:
 
     )
     user = await users_collection.find_one({"username": username, "password": password})
+    message = f"Logged in user: {user}"
+    mqtt_client.publish("logs", message)
     return user
 
 
 async def count_users():
     count = await users_collection.count_documents({"logged_in": True})
+    message = f"Counted users: {count}"
+    mqtt_client.publish("logs", message)
     return count
 
 
@@ -74,6 +86,8 @@ async def logout_user(username: str) -> User:
         {"$set": {"logged_in": False}}
     )
     user = await users_collection.find_one({"username": username})
+    message = f"Logged out user: {user}"
+    mqtt_client.publish("logs", message)
     return user
 
 
@@ -94,6 +108,8 @@ async def update_user_balance(user_id: str, amount: float, operation: str) -> Us
     ws = connected_clients.get(user_id)
     if ws:
         await ws.send_json(user["balance"])
+    message = f"Updated balance: {user}"
+    mqtt_client.publish("logs", message)
     return user
 
 
@@ -105,23 +121,31 @@ async def create_bet(bet: Bet) -> Bet:
     created_bet = await bets_collection.find_one(
         {"_id": new_bet.inserted_id}
     )
+    message = f"Created bet: {bet}"
+    mqtt_client.publish("logs", message)
     return created_bet
 
 
 async def get_resolved_bets() -> List[Bet]:
     current_time = datetime.now()
     resolved_bets = await bets_collection.find({"resolve_date": {"$lt": current_time}}).to_list(length=1000)
+    message = f"Got resolved bets: {resolved_bets}"
+    mqtt_client.publish("logs", message)
     return resolved_bets
 
 
 async def get_unresolved_bets() -> List[Bet]:
     current_time = datetime.now()
     resolved_bets = await bets_collection.find({"resolve_date": {"$gt": current_time}}).to_list(length=1000)
+    message = f"Got unresolved bets: {resolved_bets}"
+    mqtt_client.publish("logs", message)
     return resolved_bets
 
 
 async def get_all_bets() -> List[Bet]:
     bet = await bets_collection.find().to_list(length=1000)
+    message = f"Got all bets: {bet}"
+    mqtt_client.publish("logs", message)
     return bet
 
 
@@ -134,11 +158,15 @@ async def create_user_bet(user_bet: UserBet):
     created_user_bet = await user_bets_collection.find_one(
         {"_id": new_user_bet.inserted_id}
     )
+    message = f"Created user bet: {new_user_bet}"
+    mqtt_client.publish("logs", message)
     return created_user_bet
 
 
 async def resolve_user_bet(user_bet_id: str):
     await user_bets_collection.update_one({"_id": user_bet_id}, {"$set": {"resolved": True}})
+    message = f"Resolved user bet: {user_bet_id}"
+    mqtt_client.publish("logs", message)
 
 
 async def create_comment(comment: Comment):
@@ -149,6 +177,8 @@ async def create_comment(comment: Comment):
     created_comment = await comments_collection.find_one(
         {"_id": new_comment.inserted_id}
     )
+    message = f"Created comment: {new_comment}"
+    mqtt_client.publish("logs", message)
     return created_comment
 
 
@@ -156,6 +186,8 @@ async def get_user_by_id(id: str) -> User:
     if (
             user := await users_collection.find_one({"_id": ObjectId(id)})
     ) is not None:
+        message = f"Got user by id: {user}"
+        mqtt_client.publish("logs", message)
         return user
 
     raise HTTPException(status_code=404, detail=f"User with id: {id} not found")
@@ -165,6 +197,8 @@ async def get_bet_by_id(id: str) -> Bet:
     if (
             bet := await bets_collection.find_one({"_id": ObjectId(id)})
     ) is not None:
+        message = f"Got bet by id: {bet}"
+        mqtt_client.publish("logs", message)
         return bet
 
     raise HTTPException(status_code=404, detail=f"Bet with id: {id} not found")
@@ -179,6 +213,8 @@ async def get_user_bet_by_id(id: str) -> UserBet:
     if (
             user_bet := await user_bets_collection.find_one({"_id": ObjectId(id)})
     ) is not None:
+        message = f"Got user_bet by id: {user_bet}"
+        mqtt_client.publish("logs", message)
         return user_bet
 
     raise HTTPException(status_code=404, detail=f"User bet with id: {id} not found")
@@ -186,6 +222,8 @@ async def get_user_bet_by_id(id: str) -> UserBet:
 
 async def get_comments_by_bet_id(id: str) -> List[Comment]:
     comments = await comments_collection.find({"bet_id": str(id)}).to_list(length=1000)
+    message = f"Got comments by bet_id: {comments}"
+    mqtt_client.publish("logs", message)
     return comments
 
 
@@ -211,7 +249,8 @@ async def update_password(user_id: str, old_password: str, new_password: str) ->
     )
 
     updated_user = await users_collection.find_one({"_id": ObjectId(user_id)})
-
+    message = f"Updated password: {user}"
+    mqtt_client.publish("logs", message)
     return updated_user
 
 
@@ -223,6 +262,8 @@ async def update_bet_title(bet_id: str, new_title: str) -> Bet:
             {"$set": {"title": new_title}},
             return_document=ReturnDocument.AFTER
         )
+        message = f"Updated title: {bet}"
+        mqtt_client.publish("logs", message)
         return updated_bet
     return bet
 
@@ -235,6 +276,8 @@ async def update_comment_text(comment_id: str, new_text: str) -> Comment:
             {"$set": {"text": new_text}},
             return_document=ReturnDocument.AFTER
         )
+        message = f"Updated text: {comment}"
+        mqtt_client.publish("logs", message)
         return updated_comment
     return comment
 
@@ -243,15 +286,22 @@ async def delete_user(id: str):
     delete_result = await users_collection.delete_one({"_id": ObjectId(id)})
 
     if delete_result.deleted_count == 1:
+        message = f"Deleted user: {id}"
+        mqtt_client.publish("logs", message)
         return Response(status_code=status.HTTP_204_NO_CONTENT, description=f"User with id: {id} deleted")
 
     raise HTTPException(status_code=404, detail=f"User with id: {id} not found")
 
 
-async def delete_bet(id: str):
+async def delete_bet(id: str, creator_username: str):
+    bet = await bets_collection.find_one({"_id": ObjectId(id)})
+    if bet['creator_username'] != creator_username:
+        raise HTTPException(status_code=400, detail="User does not have permission to delete this bet")
     delete_result = await bets_collection.delete_one({"_id": ObjectId(id)})
 
     if delete_result.deleted_count == 1:
+        message = f"Deleted bet: {id}"
+        mqtt_client.publish("logs", message)
         return Response(status_code=status.HTTP_204_NO_CONTENT, description=f"Bet with id: {id} deleted")
 
     raise HTTPException(status_code=404, detail=f"Bet with id: {id} not found")
@@ -270,4 +320,6 @@ async def delete_comment(id: str):
     delete_result = await comments_collection.delete_one({"_id": ObjectId(id)})
 
     if delete_result.deleted_count == 1:
+        message = f"Deleted comment: {id}"
+        mqtt_client.publish("logs", message)
         return Response(status_code=status.HTTP_204_NO_CONTENT, description=f"Comment with id: {id} deleted")
