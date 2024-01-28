@@ -112,14 +112,14 @@ const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
                             {editingCommentId === comment.id ? (
                                 <form onSubmit={(e) => handleUpdateComment(e, comment.id)}>
                                     <input type="text" value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)}/>
-                                    <button type="submit">Update Comment</button>
+                                    <button type="submit">Zedytuj</button>
                                 </form>
                             ) : (
                                 <>
                                     <h4>{comment.creator_username}</h4>
                                     <p>{comment.text}</p>
-                                    {user && user.username === comment.creator_username && <button onClick={() => setEditingCommentId(comment.id)}>Edit</button>}
-                                    {user && user.username === comment.creator_username && <button onClick={() => handleDeleteComment(comment.id)}>Delete</button>}
+                                    {user && user.username === comment.creator_username && <button onClick={() => setEditingCommentId(comment.id)}>Edytuj</button>}
+                                    {user && user.username === comment.creator_username && <button onClick={() => handleDeleteComment(comment.id)}>Usun</button>}
                                 </>
                             )}
                         </div>

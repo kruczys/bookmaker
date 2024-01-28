@@ -110,7 +110,7 @@ function Bets() {
                                         <>
                                             {bet.title} - {resolveDate}
                                             {user && bet.creator_username === user.username && !showMore ? (
-                                                <button onClick={() => setEditingBetId(bet.id)}>Edit</button>
+                                                <button onClick={() => setEditingBetId(bet.id)}>Edytuj Tytul</button>
                                             ) : null}
                                             {user && !showMore ? (
                                                 <button onClick={() => handleBetSelection(bet)}>Szczegóły</button>
@@ -118,7 +118,7 @@ function Bets() {
                                         </>
                                     )}
                                     {user && bet.creator_username === user.username && !showMore &&
-                                        <button onClick={() => handleDelete(bet.id)}>Delete</button>
+                                        <button onClick={() => handleDelete(bet.id)}>Usun</button>
                                     }
                                 </li>
                             );
