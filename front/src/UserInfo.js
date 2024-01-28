@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import { UserContext } from './UserContext';
 import axios from 'axios';
 
@@ -9,6 +9,30 @@ const UserInfo = () => {
     const [oldPassword, setOldPassword] = useState("");
     const [balanceAmount, setBalanceAmount] = useState("");
     const [balanceOperation, setBalanceOperation] = useState("increase");
+    const [balance, setBalance] = useState(0);
+
+    useEffect(() => {
+        if (user) {
+            const socket = new WebSocket(`ws://localhost:8000/ws/balance/${user.id}`);
+            socket.onopen = function () {
+                console.log('WebSocket is open now.');
+                setBalance(user.balance)
+            };
+            socket.onclose = function () {
+                console.log('WebSocket is closed now.');
+            };
+            socket.onerror = function (error) {
+                console.log('WebSocket Error: ', error);
+            };
+            socket.onmessage = function (event) {
+                const newBalance = JSON.parse(event.data);
+                setBalance(newBalance);
+            };
+            return () => {
+                socket.close();
+            };
+        }
+    }, [user]);
 
     const deleteUserAccount = async () => {
         logout(user.username);
@@ -41,7 +65,7 @@ const UserInfo = () => {
         <div>
             {user ? (
                 <div>
-                    <p>Twoj nick: {user.username}, Portfel: {user.balance}</p>
+                    <p>Twoj nick: {user.username}, Portfel: {balance}</p>
                     <button onClick={() => logout(user.username)}>Wyloguj</button>
                     <button onClick={() => setShowForm(!showForm)}>Zmien haslo lub usun konto</button>
                     {showForm && (

@@ -1,6 +1,6 @@
 from datetime import datetime
 from random import randint
-from typing import List
+from typing import List, Dict
 
 from bson import ObjectId
 from fastapi import HTTPException
@@ -8,6 +8,7 @@ from fastapi.openapi.models import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 from starlette import status
+from starlette.websockets import WebSocket
 
 from server.models import UserBet, Comment, Bet, User
 
@@ -17,6 +18,7 @@ users_collection = db.get_collection("users")
 bets_collection = db.get_collection("bets")
 user_bets_collection = db.get_collection("user_bets")
 comments_collection = db.get_collection("comments")
+connected_clients: Dict[str, WebSocket] = {}
 
 
 async def get_all_users() -> List[User]:
@@ -38,6 +40,13 @@ async def create_user(user: User) -> User:
     return created_user
 
 
+async def broadcast_user_count() -> None:
+    count = await users_collection.count_documents({"logged_in": True})
+    message = {"user_count": count}
+    for ws in connected_clients.values():
+        await ws.send_json(message)
+
+
 async def login_user(username: str, password: str) -> User:
     user = await users_collection.find_one({"username": username, "password": password})
     if user is None:
@@ -49,6 +58,11 @@ async def login_user(username: str, password: str) -> User:
     )
     user = await users_collection.find_one({"username": username, "password": password})
     return user
+
+
+async def count_users():
+    count = await users_collection.count_documents({"logged_in": True})
+    return count
 
 
 async def logout_user(username: str) -> User:
@@ -77,6 +91,9 @@ async def update_user_balance(user_id: str, amount: float, operation: str) -> Us
         {"_id": ObjectId(user_id)},
         {"$set": {"balance": new_balance}},
         return_document=ReturnDocument.AFTER)
+    ws = connected_clients.get(user_id)
+    if ws:
+        await ws.send_json(user["balance"])
     return user
 
 

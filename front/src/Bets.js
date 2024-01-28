@@ -3,6 +3,7 @@ import axios from 'axios';
 import {UserContext} from "./UserContext";
 import CreateBet from "./CreateBet";
 import SelectedBet from './SelectedBet';
+import LoggedInUsers from "./LoggedInUsers";
 
 function Bets() {
     const [openBets, setOpenBets] = useState([]);
@@ -71,6 +72,7 @@ function Bets() {
 
     return (
         <div>
+            <LoggedInUsers/>
             {!showMore && (
                 <>
                     <CreateBet onNewBet={handleNewBet}/>
