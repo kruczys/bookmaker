@@ -1,24 +1,18 @@
 import json
 from typing import List, Dict, Any
 
-import paho.mqtt.client as mqtt
 from fastapi import FastAPI
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
+from starlette.websockets import WebSocket
 
 from server.cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
     get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
     update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title, \
     get_all_user_bets, get_unresolved_bets, get_resolved_bets, login_user, logout_user, update_password
 from server.models import Comment, UserBet, Bet, User
-from server.mqtt import on_connect
 
 app = FastAPI()
-
-mqtt_client = mqtt.Client()
-mqtt_client.connect("localhost", 1883)
-mqtt_client.loop_start()
-mqtt_client.on_connect = on_connect
 
 origins = [
     "http://localhost:3000"
@@ -31,6 +25,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        await websocket.send_text(f"You said: {data}")
 
 
 @app.get(
@@ -79,6 +81,7 @@ async def api_logout_user(username: str):
 async def api_reset_password(user_id: str, old_password: str, new_password: str):
     response = await update_password(user_id, old_password, new_password)
     return response
+
 
 @app.delete("/auth/delete/{user_id}")
 async def api_delete_user(user_id: str):

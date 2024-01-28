@@ -9,7 +9,7 @@ def on_chat_message(client, userdata, message):
 def on_connect(client, userdata, flags, rc):
     # client.subscribe("bets/created")
     # client.subscribe("bets/resolved")
-    # client.subscribe("comments/new")
+    client.subscribe("user/balanceChanged")
     client.message_callback_add("chat/all", on_chat_message)
     # client.subscribe("scoreboard/change")
 

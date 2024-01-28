@@ -1,15 +1,19 @@
+import json
 from datetime import datetime
 from random import randint
 from typing import List
 
+import paho.mqtt.client as mqtt
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.openapi.models import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 from starlette import status
+from starlette.websockets import WebSocket
 
 from server.models import UserBet, Comment, Bet, User
+from server.mqtt import on_connect
 
 db_client = AsyncIOMotorClient('mongodb://localhost:27017')
 db = db_client.bookmaker
@@ -17,6 +21,11 @@ users_collection = db.get_collection("users")
 bets_collection = db.get_collection("bets")
 user_bets_collection = db.get_collection("user_bets")
 comments_collection = db.get_collection("comments")
+mqtt_client = mqtt.Client()
+mqtt_client.connect("localhost", 1883)
+mqtt_client.loop_start()
+mqtt_client.on_connect = on_connect
+active_connections: List[WebSocket] = []
 
 
 async def get_all_users() -> List[User]:
@@ -63,6 +72,11 @@ async def logout_user(username: str) -> User:
     return user
 
 
+async def send_balance_to_client(user_id: str, new_balance: float):
+    for connection in active_connections:
+        await connection.send_json({'userId': user_id, 'newBalance': new_balance})
+
+
 async def update_user_balance(user_id: str, amount: float, operation: str) -> User:
     user = await users_collection.find_one({"_id": ObjectId(user_id)})
     if user is None:
@@ -77,6 +91,14 @@ async def update_user_balance(user_id: str, amount: float, operation: str) -> Us
         {"_id": ObjectId(user_id)},
         {"$set": {"balance": new_balance}},
         return_document=ReturnDocument.AFTER)
+    message_payload = json.dumps({
+        'userId': user_id,
+        'balanceAmount': amount,
+        'balanceOperation': operation,
+        'newBalance': new_balance
+    })
+    mqtt_client.publish('user/balanceChanged', message_payload)
+    await send_balance_to_client(user_id, new_balance)
     return user
 
 

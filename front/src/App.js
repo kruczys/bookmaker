@@ -1,3 +1,4 @@
+import React from "react";
 import Bets from './Bets';
 import {UserProvider} from "./UserContext";
 import Signup from "./Signup";
