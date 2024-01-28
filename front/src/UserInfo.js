@@ -1,14 +1,42 @@
-import React, { useContext, useState } from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import { UserContext } from './UserContext';
 import axios from 'axios';
+import mqtt from "mqtt";
 
 const UserInfo = () => {
-    const { user, logout } = useContext(UserContext);
+    const { user, logout, setUser } = useContext(UserContext);
     const [showForm, setShowForm] = useState(false);
     const [newPassword, setNewPassword] = useState("");
     const [oldPassword, setOldPassword] = useState("");
     const [balanceAmount, setBalanceAmount] = useState("");
     const [balanceOperation, setBalanceOperation] = useState("increase");
+    const client  = mqtt.connect('mqtt://localhost:1883');
+
+    useEffect(() => {
+        client.on('connect', function () {
+            client.subscribe('user/balanceChanged', function (err) {
+                if (err) {
+                    console.log('Could not subscribe to topic user/balanceChanged');
+                }
+            });
+        });
+
+        client.on('message', function (topic, message) {
+            const balanceChangeInfo = JSON.parse(message.toString());
+            if(balanceChangeInfo.userId === user?.id) {
+                setUser({
+                    ...user,
+                    balance: balanceChangeInfo.newBalance,
+                });
+            }
+        });
+
+        return () => {
+            if(client) {
+                client.end();
+            }
+        };
+    }, [user]);
 
     const deleteUserAccount = async () => {
         logout(user.username);

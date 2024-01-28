@@ -1,11 +1,13 @@
 import React, { createContext, useState } from 'react';
 import Cookies from 'js-cookie';
 import axios from "axios";
+import mqtt from "mqtt";
 
 export const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(Cookies.get('user') ? JSON.parse(Cookies.get('user')) : null);
+    const client = mqtt.connect('mqtt://localhost:1883')
 
     const login = async (username, password) => {
         try {
@@ -44,10 +46,10 @@ export const UserProvider = ({ children }) => {
         try {
             const response = await axios.post(`/auth/password/reset/?user_id=${user.id}&old_password=${oldPassword}&new_password=${newPassword}`);
             setUser({
-                ...user, // Preserve all properties except for 'password'
+                ...user,
                 password: newPassword
             });
-            Cookies.set('user', JSON.stringify(user), { expires: 1 }); // Update the cookie to reflect changes in user state
+            Cookies.set('user', JSON.stringify(user), { expires: 1 });
         } catch (error) {
             console.error('Password update failed:', error);
         }
@@ -58,10 +60,17 @@ export const UserProvider = ({ children }) => {
             const response = await axios.put(`/auth/update_balance/${user.id}/${balanceAmount}/${balanceOperation}`);
             const updatedBalance = balanceOperation === 'increase' ? user.balance + balanceAmount : user.balance - balanceAmount;
             setUser({
-                ...user, // Preserve all properties except for 'balance'
+                ...user,
                 balance: updatedBalance
             });
-            Cookies.set('user', JSON.stringify(user), { expires: 1 }); // Update the cookie to reflect changes in user state
+            const messagePayload = JSON.stringify({
+                userId: user.id,
+                balanceAmount,
+                balanceOperation,
+                newBalance: updatedBalance
+            });
+            client.publish('user/balanceChanged', messagePayload);
+            Cookies.set('user', JSON.stringify(user), { expires: 1 });
         } catch (error) {
             console.error('Balance update failed:', error);
         }
@@ -87,7 +96,7 @@ export const UserProvider = ({ children }) => {
 
     return (
         <UserContext.Provider value={{
-            user, login, logout, signup, updateUserPassword, updateUserBalance, updateBetTitle, updateComment  // Add here
+            user, login, logout, signup, updateUserPassword, updateUserBalance, updateBetTitle, updateComment
         }}>
             {children}
         </UserContext.Provider>
