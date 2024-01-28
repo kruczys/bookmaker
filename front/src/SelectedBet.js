@@ -3,10 +3,12 @@ import axios from 'axios';
 import {UserContext} from "./UserContext";
 
 const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
-    const {user} = useContext(UserContext); // Assuming UserContext provides the user id
+    const {user} = useContext(UserContext);
     const [amount, setAmount] = useState(0);
     const [option, setOption] = useState(0);
     const [commentText, setCommentText] = useState('');
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [newCommentText, setNewCommentText] = useState('');
 
     const handleUserBet = (e) => {
         e.preventDefault();
@@ -47,6 +49,30 @@ const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
                 console.log(error);
             });
     }
+
+    const handleDeleteComment = (commentId) => {
+        axios.delete(`http://localhost:8000/comments/${commentId}`)
+            .then(response => {
+                onBetUpdated({...bet, comments: bet.comments.filter(comment => comment.id !== commentId)});
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    };
+
+    const handleUpdateComment = (e, commentId) => {
+        e.preventDefault();
+
+        axios.put(`http://localhost:8000/comments/${commentId}?new_text=${newCommentText}`)
+            .then(response => {
+                onBetUpdated({...bet, comments: bet.comments.map(comment => comment.id === commentId ? response.data : comment)});
+                setEditingCommentId(null);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    };
+
     if (user) {
         return (
             <div>
@@ -72,27 +98,38 @@ const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
                 </form>
 
                 {bet.comments && (<div>
-                        <h3>Sekcja komentarzy</h3>
-                        <form onSubmit={handleComment}>
-                            <label>
-                                Dodaj komentarz:
-                                <input type="text" value={commentText} onChange={(e) => setCommentText(e.target.value)}
-                                       required/>
-                            </label>
-                            <input type="submit" value="Post Comment"/>
-                        </form>
-                        {bet.comments.map((comment) => (
-                            <>
-                                <h4>{comment.creator_username}</h4>
-                                <p>{comment.text}</p>
-                            </>
-                        ))}
-
-                    </div>
-                )}
+                    <h3>Sekcja komentarzy</h3>
+                    <form onSubmit={handleComment}>
+                        <label>
+                            Dodaj komentarz:
+                            <input type="text" value={commentText} onChange={(e) => setCommentText(e.target.value)}
+                                   required/>
+                        </label>
+                        <input type="submit" value="Post Comment"/>
+                    </form>
+                    {bet.comments.map((comment) => (
+                        <div key={comment.id}>
+                            {editingCommentId === comment.id ? (
+                                <form onSubmit={(e) => handleUpdateComment(e, comment.id)}>
+                                    <input type="text" value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)}/>
+                                    <button type="submit">Update Comment</button>
+                                </form>
+                            ) : (
+                                <>
+                                    <h4>{comment.creator_username}</h4>
+                                    <p>{comment.text}</p>
+                                    {user && user.username === comment.creator_username && <button onClick={() => setEditingCommentId(comment.id)}>Edit</button>}
+                                    {user && user.username === comment.creator_username && <button onClick={() => handleDeleteComment(comment.id)}>Delete</button>}
+                                </>
+                            )}
+                        </div>
+                    ))}
+                </div>)}
             </div>
         )
-    } else {return null;}
+    } else {
+        return null;
+    }
 }
 
 export default SelectedBet;
