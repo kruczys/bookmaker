@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Dict, Any
 
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI
@@ -80,7 +80,6 @@ async def api_reset_password(user_id: str, old_password: str, new_password: str)
     response = await update_password(user_id, old_password, new_password)
     return response
 
-
 @app.delete("/auth/delete/{user_id}")
 async def api_delete_user(user_id: str):
     response = await delete_user(user_id)
@@ -110,11 +109,11 @@ async def api_get_user(id: str):
 
 @app.post(
     "/bets",
-    response_model=Bet,
     response_description=False,
 )
-async def api_create_bet(bet: Bet):
+async def api_create_bet(bet: Bet) -> Dict[str, Any]:
     response = await create_bet(bet)
+    response["id"] = str(response.pop("_id"))
     mqtt_client.publish("bets/created", json.dumps({"message": f"New bet added: {bet.title}!"}))
     return response
 

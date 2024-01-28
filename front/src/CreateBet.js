@@ -20,10 +20,12 @@ const CreateBet = ({ onNewBet }) => {
 
     const handleSubmit = (event) => {
         event.preventDefault();
+        let resolveDate = new Date(resolveDateTime);
+        resolveDate.setHours(resolveDate.getHours() + 1);
         createBet({
             creator_username: user.username,
             title,
-            resolve_date: new Date(resolveDateTime),
+            resolve_date: resolveDate,
         });
         setTitle('');
         setResolveDateTime('');

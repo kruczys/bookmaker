@@ -69,17 +69,6 @@ function Bets() {
             });
     }
 
-    const handleCommentSubmit = () => {
-        updateComment(editingCommentId, newCommentText)
-            .then(updatedComment => {
-                setSelectedBet({...selectedBet, comments: selectedBet.comments.map(c => c.id === updatedComment.id ? updatedComment : c)});
-                setEditingCommentId(null);
-            })
-            .catch(error => {
-                console.log(error);
-            });
-    }
-
     return (
         <div>
             {!showMore && (

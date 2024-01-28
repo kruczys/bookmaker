@@ -103,6 +103,11 @@ async def get_unresolved_bets() -> List[Bet]:
     return resolved_bets
 
 
+async def get_all_bets() -> List[Bet]:
+    bet = await bets_collection.find().to_list(length=1000)
+    return bet
+
+
 async def create_user_bet(user_bet: UserBet):
     user_bet_dict = user_bet.model_dump(by_alias=True, exclude=["id"])
     await update_user_balance(user_bet_dict["user_id"], user_bet_dict["amount"], "decrease")
