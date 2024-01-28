@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import paho.mqtt.client as mqtt
 
@@ -10,7 +11,7 @@ client = mqtt.Client()
 
 def on_connect(client, userdata, flags, rc):
     with open("log_file.txt", "a") as log_file:
-        log_file.write("Connected with result code " + str(rc) + '\n')
+        log_file.write("Connected with result code " + str(rc) + str(datetime.now()) + '\n')
         log_file.flush()
         os.fsync(log_file.fileno())
 
