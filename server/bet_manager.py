@@ -31,7 +31,7 @@ async def main():
     bet_manager = BetManager(client)
     while True:
         await bet_manager.resolve_bets()
-        await asyncio.sleep(10)
+        await asyncio.sleep(30)
 
 
 if __name__ == "__main__":
