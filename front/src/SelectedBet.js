@@ -82,7 +82,7 @@ const SelectedBet = ({bet, onBetUpdated, onHideMore}) => {
                 <form onSubmit={handleUserBet}>
                     <label>
                         Ilosc:
-                        <input type="number" min="1" max={user.balance} value={amount}
+                        <input type="number" min="1" max="1000" value={amount}
                                onChange={(e) => setAmount(parseFloat(e.target.value))}
                                required/>
                     </label>

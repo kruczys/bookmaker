@@ -134,6 +134,14 @@ async def get_resolved_bets() -> List[Bet]:
     return resolved_bets
 
 
+async def search_resolved_bets(title_substring: str) -> List[Bet]:
+    resolved_bets = await get_resolved_bets()
+    matching_bets = [bet for bet in resolved_bets if title_substring in bet["title"]]
+    message = f"Found {len(matching_bets)} resolved bets matching title substring: {title_substring}"
+    mqtt_client.publish("logs", message)
+    return matching_bets
+
+
 async def get_unresolved_bets() -> List[Bet]:
     current_time = datetime.now()
     resolved_bets = await bets_collection.find({"resolve_date": {"$gt": current_time}}).to_list(length=1000)
@@ -205,7 +213,7 @@ async def get_bet_by_id(id: str) -> Bet:
 
 
 async def get_all_user_bets(user_id: str) -> List[UserBet]:
-    user_bets = await user_bets_collection.find({"user_id": user_id}).to_list(length=1000)
+    user_bets = await user_bets_collection.find({"user_id": user_id, "resolved": False}).to_list(length=1000)
     return user_bets
 
 
@@ -308,9 +316,11 @@ async def delete_bet(id: str, creator_username: str):
 
 
 async def delete_user_bet(id: str):
+    user_bet = await get_user_bet_by_id(id)
     delete_result = await user_bets_collection.delete_one({"_id": ObjectId(id)})
 
     if delete_result.deleted_count == 1:
+        await update_user_balance(user_bet["user_id"], user_bet["amount"], "increase")
         return Response(status_code=status.HTTP_204_NO_CONTENT, description=f"User bet with id: {id} deleted")
 
     raise HTTPException(status_code=404, detail=f"User with id: {id} not found")

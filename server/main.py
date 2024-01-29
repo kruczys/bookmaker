@@ -5,13 +5,12 @@ import paho.mqtt.client as mqtt
 from fastapi import FastAPI, WebSocket
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
-from starlette.websockets import WebSocketDisconnect
 
 from server.cruds import delete_comment, get_comments_by_bet_id, create_comment, delete_user_bet, \
     get_user_bet_by_id, create_user_bet, delete_bet, get_bet_by_id, create_bet, get_user_by_id, \
     update_user_balance, delete_user, create_user, get_all_users, update_comment_text, update_bet_title, \
     get_all_user_bets, get_unresolved_bets, get_resolved_bets, login_user, logout_user, update_password, \
-    connected_clients, count_users, broadcast_user_count
+    connected_clients, count_users, search_resolved_bets
 from server.models import Comment, UserBet, Bet, User
 from server.mqtt import on_connect
 
@@ -23,7 +22,7 @@ mqtt_client.loop_start()
 mqtt_client.on_connect = on_connect
 
 origins = [
-    "http://localhost:3000"
+    "*"
 ]
 
 app.add_middleware(
@@ -33,19 +32,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.websocket("/ws/logged")
-async def websocket_logged(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        while True:
-            data = await websocket.receive_text()
-            if data == "ping":
-                count = await count_users()
-                await websocket.send_json(count)
-    except WebSocketDisconnect:
-        pass
 
 
 @app.websocket("/ws/balance/{user_id}")
@@ -95,7 +81,6 @@ async def api_login_user(username: str, password: str):
     response = await login_user(username, password)
     count = await count_users()
     mqtt_client.publish('users/logged', json.dumps({'user_count': count}))
-    await broadcast_user_count()
     return response
 
 
@@ -108,7 +93,6 @@ async def api_logout_user(username: str):
     response = await logout_user(username)
     count = await count_users()
     mqtt_client.publish('users/logged', json.dumps({'user_count': count}))
-    await broadcast_user_count()
     return response
 
 
@@ -173,6 +157,16 @@ async def api_get_unresolved_bets():
 )
 async def api_get_resolved_bets():
     response = await get_resolved_bets()
+    return response
+
+
+@app.get(
+    "/bets/search",
+    response_model=List[Bet],
+    response_model_by_alias=False,
+)
+async def api_search_resolved_bets(title_substring: str):
+    response = await search_resolved_bets(title_substring)
     return response
 
 

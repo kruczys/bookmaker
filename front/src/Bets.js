@@ -17,6 +17,20 @@ function Bets() {
     const [newCommentText, setNewCommentText] = useState("");
 
     const {user, updateBetTitle, updateComment} = useContext(UserContext);
+    const [search, setSearch] = useState([]);
+    const [searchResults, setSearchResults] = useState([])
+    const searchBetsByTitle = async () => {
+        const response = await axios.get(`http://localhost:8000/bets/search?title_substring=${search}`);
+        setSearchResults(response.data);
+    };
+
+    useEffect(() => {
+        if (search !== '') {
+            searchBetsByTitle();
+        } else {
+            setSearchResults(resolvedBets);
+        }
+    }, [search]);
 
     useEffect(() => {
         axios.get('http://localhost:8000/bets/unresolved')
@@ -131,8 +145,16 @@ function Bets() {
             {!showMore && (
                 <div>
                     <h3>Zamkniete zaklady</h3>
+                    <label htmlFor="search">Search:</label>
+                    <input
+                        type="text"
+                        id="search"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search bets by title"
+                    />
                     <ul>
-                        {resolvedBets.map(bet => {
+                        {searchResults.map(bet => {
                             return (
                                 <li key={bet.id}>
                                     {bet.title} - {bet.result === 0 ? "Zwyciestwo lewej strony" : bet.result === 1 ? "Remis" : "Zwyciestwo prawej strony"}
