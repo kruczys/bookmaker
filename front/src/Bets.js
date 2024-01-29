@@ -118,7 +118,7 @@ function Bets() {
                                                 value={newBetTitle}
                                                 onChange={e => setNewBetTitle(e.target.value)}
                                             />
-                                            <button onClick={handleBetTitleSubmit}>Submit</button>
+                                            <button onClick={handleBetTitleSubmit}>Edytuj</button>
                                         </>
                                     ) : (
                                         <>
@@ -145,13 +145,13 @@ function Bets() {
             {!showMore && (
                 <div>
                     <h3>Zamkniete zaklady</h3>
-                    <label htmlFor="search">Search:</label>
+                    <label htmlFor="search">Wyszukaj:</label>
                     <input
                         type="text"
                         id="search"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder="Search bets by title"
+                        placeholder="Wpisz tytul"
                     />
                     <ul>
                         {searchResults.map(bet => {
